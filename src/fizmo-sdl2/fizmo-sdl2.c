@@ -90,8 +90,8 @@ SDL_Surface* Surf_Display = NULL;
 SDL_Texture *sdlTexture = NULL;
 static z_colour screen_default_foreground_color = Z_COLOUR_BLACK;
 static z_colour screen_default_background_color = Z_COLOUR_WHITE;
-static int sdl_interface_screen_height_in_pixels = 800;
-static int sdl_interface_screen_width_in_pixels = 600;
+static int sdl2_interface_screen_height_in_pixels = 800;
+static int sdl2_interface_screen_width_in_pixels = 600;
 static const int sdl_color_depth = 32;
 //static const int sdl_video_flags = SDL_SWSURFACE | SDL_ANYFORMAT
 //| SDL_DOUBLEBUF | SDL_RESIZABLE;
