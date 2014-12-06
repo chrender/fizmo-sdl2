@@ -1,3 +1,3 @@
 
-PKG_CHECK_MODULES([sdl], [sdl])
+PKG_CHECK_MODULES([sdl2], [sdl2])
 

@@ -1,5 +1,5 @@
 
-/* fizmo_sdl_locales.c
+/* fizmo_sdl2_locales.c
  *
  * This file is part of fizmo.
  *
@@ -30,13 +30,13 @@
  */
 
 
-#ifndef fizmo_sdl_locales_c_INCLUDED
-#define fizmo_sdl_locales_c_INCLUDED
+#ifndef fizmo_sdl2_locales_c_INCLUDED
+#define fizmo_sdl2_locales_c_INCLUDED
 
 #include <tools/types.h>
 
-z_ucs fizmo_sdl_module_name[] = {
-  'f', 'i', 'z', 'm', 'o', '_', 's', 'd', 'l', 0 };
+z_ucs fizmo_sdl2_module_name[] = {
+  'f', 'i', 'z', 'm', 'o', '_', 's', 'd', 'l', '2',  0 };
 
-#endif // fizmo_sdl_locales_c_INCLUDED
+#endif // fizmo_sdl2_locales_c_INCLUDED
 

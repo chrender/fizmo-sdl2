@@ -1,5 +1,5 @@
 
-/* fizmo-sdl.c
+/* fizmo-sdl2.c
  *
  * This file is part of fizmo.
  *
@@ -40,9 +40,10 @@
 #include <strings.h>
 #include <signal.h>
 
-#include <SDL.h>
+//#include <SDL.h>
+#include <SDL2/SDL.h>
 //#include "SDL_getenv.h"
-#include <SDL_thread.h>
+//#include <SDL_thread.h>
 
 #include <tools/i18n.h>
 #include <tools/tracelog.h>
@@ -64,7 +65,7 @@
 #include SOUND_INTERFACE_INCLUDE_FILE
 #endif /* SOUND_INTERFACE_INCLUDE_FILE */
 
-#include "../locales/fizmo_sdl_locales.h"
+#include "../locales/fizmo_sdl2_locales.h"
 
 #define FIZMO_SDL_VERSION "0.1.0"
 
@@ -82,15 +83,18 @@
 #define SDL_Z_UCS_BUF_SIZE 32
 */
 
-static char* interface_name = "sdl";
-SDL_Surface* Surf_Display;
+static char* interface_name = "sdl2";
+SDL_Window *sdl_window = NULL;
+SDL_Renderer *sdl_renderer = NULL;
+SDL_Surface* Surf_Display = NULL;
+SDL_Texture *sdlTexture = NULL;
 static z_colour screen_default_foreground_color = Z_COLOUR_BLACK;
 static z_colour screen_default_background_color = Z_COLOUR_WHITE;
 static int sdl_interface_screen_height_in_pixels = 800;
 static int sdl_interface_screen_width_in_pixels = 600;
 static const int sdl_color_depth = 32;
-static const int sdl_video_flags = SDL_SWSURFACE | SDL_ANYFORMAT
-| SDL_DOUBLEBUF | SDL_RESIZABLE;
+//static const int sdl_video_flags = SDL_SWSURFACE | SDL_ANYFORMAT
+//| SDL_DOUBLEBUF | SDL_RESIZABLE;
 static SDL_TimerID timeout_timer;
 static bool timeout_timer_exists;
 static SDL_sem *timeout_semaphore;
@@ -473,22 +477,22 @@ static void print_startup_syntax()
 
   streams_latin1_output("\n");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_USAGE_DESCRIPTION);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_USAGE_DESCRIPTION);
   streams_latin1_output("\n\n");
 
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_FIZMO_SDL_VERSION_P0S, FIZMO_SDL_VERSION);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_FIZMO_SDL_VERSION_P0S, FIZMO_SDL_VERSION);
   streams_latin1_output("\n");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_LIBFIZMO_VERSION_P0S,
+      fizmo_sdl2_module_name,
+      i18n_sdl2_LIBFIZMO_VERSION_P0S,
       FIZMO_VERSION);
   streams_latin1_output("\n");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_LIBPIXELINTERFACE_VERSION_P0S,
+      fizmo_sdl2_module_name,
+      i18n_sdl2_LIBPIXELINTERFACE_VERSION_P0S,
       get_screen_pixel_interface_version());
   streams_latin1_output("\n");
   if (active_sound_interface != NULL)
@@ -502,8 +506,8 @@ static void print_startup_syntax()
   streams_latin1_output("\n");
 
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_LOCALES_AVAILIABLE);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_LOCALES_AVAILIABLE);
   streams_latin1_output(" ");
 
   i = 0;
@@ -520,16 +524,16 @@ static void print_startup_syntax()
   streams_latin1_output(".\n");
 
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_LOCALE_SEARCH_PATH);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_LOCALE_SEARCH_PATH);
   streams_latin1_output(": ");
   streams_latin1_output(
       get_i18n_default_search_path());
   streams_latin1_output(".\n");
 
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_COLORS_AVAILABLE);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_COLORS_AVAILABLE);
   streams_latin1_output(": ");
 
   for (i=Z_COLOUR_BLACK; i<=Z_COLOUR_WHITE; i++)
@@ -541,134 +545,134 @@ static void print_startup_syntax()
   streams_latin1_output(".\n\n");
 
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_VALID_OPTIONS_ARE);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_VALID_OPTIONS_ARE);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -l,  --set-locale: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_SET_LOCALE_NAME_FOR_INTERPRETER_MESSAGES);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_SET_LOCALE_NAME_FOR_INTERPRETER_MESSAGES);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -pr, --predictable: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_START_WITH_RANDOM_GENERATOR_IN_PREDICTABLE_MODE);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_START_WITH_RANDOM_GENERATOR_IN_PREDICTABLE_MODE);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -ra, --random: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_START_WITH_RANDOM_GENERATOR_IN_RANDOM_MODE);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_START_WITH_RANDOM_GENERATOR_IN_RANDOM_MODE);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -st, --start-transcript: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_START_GAME_WITH_TRANSCRIPT_ENABLED);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_START_GAME_WITH_TRANSCRIPT_ENABLED);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -tf, --transcript-filename: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_SET_TRANSCRIPT_FILENAME);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_SET_TRANSCRIPT_FILENAME);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -rc, --record-commands: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_START_GAME_WITH_RECORDING_COMMANDS);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_START_GAME_WITH_RECORDING_COMMANDS);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -fi, --start-file-input: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_START_GAME_WITH_INPUT_FROM_FILE);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_START_GAME_WITH_INPUT_FROM_FILE);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -if, --input-filename: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_FILENAME_TO_READ_COMMANDS_FROM);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_FILENAME_TO_READ_COMMANDS_FROM);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -rf, --record-filename: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_FILENAME_TO_RECORD_INPUT_TO);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_FILENAME_TO_RECORD_INPUT_TO);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -f,  --foreground-color: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_SET_FOREGROUND_COLOR);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_SET_FOREGROUND_COLOR);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -b,  --background-color: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_SET_BACKGROUND_COLOR);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_SET_BACKGROUND_COLOR);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -nc, --dont-use-colors: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_DONT_USE_COLORS);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_DONT_USE_COLORS);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -ec, --enable-colors: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_ENABLE_COLORS);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_ENABLE_COLORS);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -lm, --left-margin: " );
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_SET_LEFT_MARGIN_SIZE);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_SET_LEFT_MARGIN_SIZE);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -rm, --right-margin: " );
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_SET_RIGHT_MARGIN_SIZE);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_SET_RIGHT_MARGIN_SIZE);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -um, --umem: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_USE_UMEM_FOR_SAVEGAMES);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_USE_UMEM_FOR_SAVEGAMES);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -dh, --disable-hyphenation: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_DISABLE_HYPHENATION);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_DISABLE_HYPHENATION);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -ds, --disable-sound: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_DISABLE_SOUND);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_DISABLE_SOUND);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -t,  --set-tandy-flag: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_SET_TANDY_FLAG);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_SET_TANDY_FLAG);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -sy, --sync-transcript: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_SYNC_TRANSCRIPT);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_SYNC_TRANSCRIPT);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -h,  --help: ");
   i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_SHOW_HELP_MESSAGE_AND_EXIT);
+      fizmo_sdl2_module_name,
+      i18n_sdl2_SHOW_HELP_MESSAGE_AND_EXIT);
   streams_latin1_output("\n");
 
   //set_configuration_value("locale", fizmo_locale, "fizmo");
@@ -809,7 +813,7 @@ static void link_interface_to_story(struct z_story *story)
       &Surf_Display->clip_rect,
       z_to_sdl_colour(screen_default_background_color));
 
-  SDL_WM_SetCaption(story->title, story->title);
+  SDL_SetWindowTitle(sdl_window, story->title);
 
   /*
   int flags;
@@ -824,8 +828,8 @@ static void link_interface_to_story(struct z_story *story)
   // detect an incoming time-signal for the input routine.
   if (pipe(sdl_if_signalling_pipe) != 0)
     i18n_translate_and_exit(
-        fizmo_sdl_module_name,
-        i18n_sdl_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
+        fizmo_sdl2_module_name,
+        i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
         -0x2016,
         "pipe",
         errno,
@@ -834,8 +838,8 @@ static void link_interface_to_story(struct z_story *story)
   // Get the current flags for the read-end of the pipe.
   if ((flags = fcntl(sdl_if_signalling_pipe[0], F_GETFL, 0)) == -1)
     i18n_translate_and_exit(
-        fizmo_sdl_module_name,
-        i18n_sdl_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
+        fizmo_sdl2_module_name,
+        i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
         -0x2017,
         "fcntl / F_GETFL",
         errno,
@@ -845,8 +849,8 @@ static void link_interface_to_story(struct z_story *story)
   // input "visible" at once without having to wait for a newline.
   if ((fcntl(sdl_if_signalling_pipe[0], F_SETFL, flags|O_NONBLOCK)) == -1)
     i18n_translate_and_exit(
-        fizmo_sdl_module_name,
-        i18n_sdl_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
+        fizmo_sdl2_module_name,
+        i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
         -0x2018,
         "fcntl / F_SETFL",
         errno,
@@ -855,7 +859,7 @@ static void link_interface_to_story(struct z_story *story)
   max_nof_color_pairs = story->max_nof_color_pairs;
   color_initialized = false;
 
-  sdl_interface_open = true;
+  sdl2_interface_open = true;
 
   if (
       (active_z_story->title != NULL)
@@ -884,7 +888,7 @@ static void reset_interface()
 }
 
 
-static int sdl_close_interface(z_ucs *UNUSED(error_message))
+static int sdl2_close_interface(z_ucs *UNUSED(error_message))
 {
   return 0;
 /*
@@ -910,7 +914,7 @@ static int sdl_close_interface(z_ucs *UNUSED(error_message))
 
   endwin();
 
-  sdl_interface_open = false;
+  sdl2_interface_open = false;
 
   if (error_message != NULL)
   {
@@ -922,7 +926,7 @@ static int sdl_close_interface(z_ucs *UNUSED(error_message))
           ptr,
           SDL_WCHAR_T_BUF_SIZE);
 
-      sdl_fputws(wchar_t_buf, stderr);
+      sdl2_fputws(wchar_t_buf, stderr);
     }
   }
 
@@ -935,7 +939,7 @@ static int sdl_close_interface(z_ucs *UNUSED(error_message))
 
 
 /*
-static attr_t sdl_z_style_to_attr_t(int16_t style_data)
+static attr_t sdl2_z_style_to_attr_t(int16_t style_data)
 {
   attr_t result = A_NORMAL;
 
@@ -962,14 +966,14 @@ static attr_t sdl_z_style_to_attr_t(int16_t style_data)
 static void output_interface_info()
 {
   (void)i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_FIZMO_SDL_VERSION_P0S,
+      fizmo_sdl2_module_name,
+      i18n_sdl2_FIZMO_SDL_VERSION_P0S,
       FIZMO_SDL_VERSION);
   (void)streams_latin1_output("\n");
 #ifdef ENABLE_X11_IMAGES
   (void)i18n_translate(
-      fizmo_sdl_module_name,
-      i18n_sdl_LIBDRILBO_VERSION_P0S,
+      fizmo_sdl2_module_name,
+      i18n_sdl2_LIBDRILBO_VERSION_P0S,
       get_drilbo_version());
   (void)streams_latin1_output("\n");
 #endif //ENABLE_X11_IMAGES
@@ -981,26 +985,26 @@ static void refresh_screen_size()
 {
   getmaxyx(
       stdscr,
-      sdl_interface_screen_height,
-      sdl_interface_screen_width);
+      sdl2_interface_screen_height,
+      sdl2_interface_screen_width);
 }
 */
 
 
 static int get_screen_width_in_pixels()
 {
-  return sdl_interface_screen_width_in_pixels;
+  return sdl2_interface_screen_width_in_pixels;
 }
 
 
 static int get_screen_height_in_pixels()
 {
-  return sdl_interface_screen_height_in_pixels;
+  return sdl2_interface_screen_height_in_pixels;
 }
 
 
 /*
-static void sdl_if_catch_signal(int sig_num)
+static void sdl2_if_catch_signal(int sig_num)
 {
   int bytes_written = 0;
   int ret_val;
@@ -1023,8 +1027,8 @@ static void sdl_if_catch_signal(int sig_num)
 
     if (ret_val == -1)
       i18n_translate_and_exit(
-          fizmo_sdl_module_name,
-          i18n_sdl_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
+          fizmo_sdl2_module_name,
+          i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
           -0x2023,
           "write",
           errno,
@@ -1072,6 +1076,7 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
   bool running = true;
   SDL_Event Event;
   int wait_result, result = -1;
+  char *ptr;
 
   if (timeout_millis > 0) {
     //printf("input timeout: %d ms.\n", timeout_millis);
@@ -1088,57 +1093,95 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
       TRACE_LOG("quit\n");
       running = false;
     }
-    else if (Event.type == SDL_KEYDOWN) {
-      TRACE_LOG("keydown\n");
-      //printf("keydown.\n");
-      if (Event.key.keysym.sym == SDLK_BACKSPACE) {
-        result = EVENT_WAS_CODE_BACKSPACE;
-        running = false;
-      }
-      else if (Event.key.keysym.sym == SDLK_UP) {
-        result = EVENT_WAS_CODE_CURSOR_UP;
-        running = false;
-      }
-      else if (Event.key.keysym.sym == SDLK_DOWN) {
-        result = EVENT_WAS_CODE_CURSOR_DOWN;
-        running = false;
-      }
-      else if (Event.key.keysym.sym == SDLK_LEFT) {
-        result = EVENT_WAS_CODE_CURSOR_LEFT;
-        running = false;
-      }
-      else if (Event.key.keysym.sym == SDLK_RIGHT) {
-        result = EVENT_WAS_CODE_CURSOR_RIGHT;
-        running = false;
-      }
-      else {
-        result = EVENT_WAS_INPUT;
-        if (Event.key.keysym.unicode == 13) {
-          *z_ucs_input = Z_UCS_NEWLINE;
-        }
-        else {
-          *z_ucs_input = Event.key.keysym.unicode;
-        }
-        running = false;
-      }
+    else if (Event.type == SDL_TEXTINPUT) {
+      result = EVENT_WAS_INPUT;
+      ptr = Event.text.text;
+      *z_ucs_input = utf8_char_to_zucs_char(&ptr);
+      TRACE_LOG("z_ucs_input: %d.\n", *z_ucs_input);
+      running = false;
     }
-    else if (Event.type == SDL_VIDEORESIZE) {
-      // User requested screen resize.
-      TRACE_LOG("resize\n");
-      printf("resize: %d x %d\n", Event.resize.w, Event.resize.h);
+    else if (Event.type == SDL_KEYDOWN) {
+       if (Event.key.keysym.sym == SDLK_LEFT) {
+          result = EVENT_WAS_CODE_CURSOR_LEFT;
+          running = false;
+       }
+       else if (Event.key.keysym.sym == SDLK_RIGHT) {
+         result = EVENT_WAS_CODE_CURSOR_RIGHT;
+         running = false;
+       }
+       else if (Event.key.keysym.sym == SDLK_DOWN) {
+         result = EVENT_WAS_CODE_CURSOR_DOWN;
+         running = false;
+       }
+       else if (Event.key.keysym.sym == SDLK_UP) {
+         result = EVENT_WAS_CODE_CURSOR_UP;
+         running = false;
+       }
+       else if (Event.key.keysym.sym == SDLK_BACKSPACE) {
+         result = EVENT_WAS_CODE_BACKSPACE;
+         running = false;
+       }
+       else if (Event.key.keysym.sym == SDLK_RETURN) {
+        result = EVENT_WAS_INPUT;
+         *z_ucs_input = Z_UCS_NEWLINE;
+         running = false;
+       }
+    }
+    else if (Event.type == SDL_WINDOWEVENT) {
+      if (Event.window.event == SDL_WINDOWEVENT_RESIZED) {
+        TRACE_LOG("resize\n");
 
-      if ((Surf_Display = SDL_SetVideoMode(
-              Event.resize.w,
-              Event.resize.h,
-              sdl_color_depth,
-              sdl_video_flags)) == NULL) {
-        printf("err-setvideomode\n");
+        /*
+           SDL_Log("Window %d resized to %dx%d",
+           event->window.windowID, event->window.data1,
+           event->window.data2);
+           */
+
+        sdl2_interface_screen_width_in_pixels = Event.window.data1;
+        sdl2_interface_screen_height_in_pixels = Event.window.data2;
+
+        printf("resize: %d x %d.\n",
+            sdl2_interface_screen_width_in_pixels,
+            sdl2_interface_screen_height_in_pixels);
+
+        SDL_SetWindowSize(sdl_window,
+            sdl2_interface_screen_width_in_pixels,
+            sdl2_interface_screen_height_in_pixels);
+
+        // memleak, destroy old?
+        if ((Surf_Display = SDL_CreateRGBSurface(
+                0,
+                sdl2_interface_screen_width_in_pixels,
+                sdl2_interface_screen_height_in_pixels,
+                32,
+                0x00FF0000,
+                0x0000FF00,
+                0x000000FF,
+                0xFF000000)) == NULL) {
+          i18n_translate_and_exit(
+              fizmo_sdl2_module_name,
+              i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
+              -1,
+              "SDL_GetWindowSurface");
+        }
+
+        // memleak, destroy old?
+        if ((sdlTexture = SDL_CreateTexture(sdl_renderer,
+                SDL_PIXELFORMAT_ARGB8888,
+                SDL_TEXTUREACCESS_STREAMING,
+                sdl2_interface_screen_width_in_pixels,
+                sdl2_interface_screen_height_in_pixels)) == NULL) {
+          i18n_translate_and_exit(
+              fizmo_sdl2_module_name,
+              i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
+              -1,
+              "SDL_CreateTexture");
+        }
+
+        new_pixel_screen_size(
+            sdl2_interface_screen_height_in_pixels,
+            sdl2_interface_screen_width_in_pixels);
       }
-
-      sdl_interface_screen_height_in_pixels = Event.resize.h;
-      sdl_interface_screen_width_in_pixels = Event.resize.w;
-
-      new_pixel_screen_size(Event.resize.h, Event.resize.w);
     }
     else if (Event.type == SDL_USEREVENT) {
       result = EVENT_WAS_TIMEOUT;
@@ -1286,8 +1329,8 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
             else
             {
               i18n_translate_and_exit(
-                  fizmo_sdl_module_name,
-                  i18n_sdl_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
+                  fizmo_sdl2_module_name,
+                  i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
                   -0x2041,
                   "read",
                   errno,
@@ -1327,8 +1370,8 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
         else
         {
           i18n_translate_and_exit(
-              fizmo_sdl_module_name,
-              i18n_sdl_UNKNOWN_ERROR_CASE,
+              fizmo_sdl2_module_name,
+              i18n_sdl2_UNKNOWN_ERROR_CASE,
               -0x2041);
         }
       }
@@ -1357,7 +1400,11 @@ void update_screen()
 {
   TRACE_LOG("Doing update_screen().\n");
   //SDL_UpdateRect(Surf_Display, 0, 0, 0, 0);
-  SDL_Flip(Surf_Display);
+  //SDL_Flip(Surf_Display);
+  SDL_UpdateTexture(sdlTexture, NULL, Surf_Display->pixels, Surf_Display->pitch);
+  SDL_RenderClear(sdl_renderer);
+  SDL_RenderCopy(sdl_renderer, sdlTexture, NULL, NULL);
+  SDL_RenderPresent(sdl_renderer);
 }
 
 
@@ -1506,7 +1553,7 @@ void fill_area(int startx, int starty, int xsize, int ysize,
 static void set_cursor_visibility(bool UNUSED(visible))
 {
   /*
-  if (sdl_interface_open == true)
+  if (sdl2_interface_open == true)
   {
     if (visible == true)
       curs_set(1);
@@ -1547,7 +1594,7 @@ static int console_output(z_ucs *output)
 }
 
 
-static struct z_screen_pixel_interface sdl_interface =
+static struct z_screen_pixel_interface sdl2_interface =
 {
   &draw_rgb_pixel,
   &is_input_timeout_available,
@@ -1559,7 +1606,7 @@ static struct z_screen_pixel_interface sdl_interface =
   &get_config_option_names,
   &link_interface_to_story,
   &reset_interface,
-  &sdl_close_interface,
+  &sdl2_close_interface,
   &output_interface_info,
   &get_screen_width_in_pixels,
   &get_screen_height_in_pixels,
@@ -1598,8 +1645,8 @@ void catch_signal(int sig_num)
 
     if (ret_val == -1)
       i18n_translate_and_exit(
-          fizmo_sdl_module_name,
-          i18n_sdl_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
+          fizmo_sdl2_module_name,
+          i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
           -0x2023,
           "write",
           errno,
@@ -1643,7 +1690,7 @@ int main(int argc, char *argv[])
   turn_on_trace();
 #endif // ENABLE_TRACING
 
-  fizmo_register_screen_pixel_interface(&sdl_interface);
+  fizmo_register_screen_pixel_interface(&sdl2_interface);
 
   while (argi < argc)
   {
@@ -1661,8 +1708,8 @@ int main(int argc, char *argv[])
         streams_latin1_output("\n");
 
         i18n_translate(
-            fizmo_sdl_module_name,
-            i18n_sdl_INVALID_CONFIGURATION_VALUE_P0S_FOR_P1S,
+            fizmo_sdl2_module_name,
+            i18n_sdl2_INVALID_CONFIGURATION_VALUE_P0S_FOR_P1S,
             argv[argi],
             "locale");
 
@@ -1854,8 +1901,8 @@ int main(int argc, char *argv[])
          )
       {
         i18n_translate(
-            fizmo_sdl_module_name,
-            i18n_sdl_INVALID_CONFIGURATION_VALUE_P0S_FOR_P1S,
+            fizmo_sdl2_module_name,
+            i18n_sdl2_INVALID_CONFIGURATION_VALUE_P0S_FOR_P1S,
             argv[argi],
             argv[argi - 1]);
 
@@ -1926,8 +1973,8 @@ int main(int argc, char *argv[])
     if (story_stream == NULL)
     {
       i18n_translate_and_exit(
-          fizmo_sdl_module_name,
-          i18n_sdl_COULD_NOT_OPEN_OR_FIND_P0S,
+          fizmo_sdl2_module_name,
+          i18n_sdl2_COULD_NOT_OPEN_OR_FIND_P0S,
           -0x2016,
           input_file);
       exit(EXIT_FAILURE);
@@ -1937,25 +1984,71 @@ int main(int argc, char *argv[])
 
       if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
         i18n_translate_and_exit(
-            fizmo_sdl_module_name,
-            i18n_sdl_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
+            fizmo_sdl2_module_name,
+            i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
             -1,
             "SDL_Init");
 
       atexit(SDL_Quit);
-      SDL_EnableUNICODE(1);
-      SDL_EnableKeyRepeat(200, 20);
+      //SDL_EnableUNICODE(1);
+      //SDL_EnableKeyRepeat(200, 20);
 
+      /*
       if ((Surf_Display = SDL_SetVideoMode(
-              sdl_interface_screen_width_in_pixels,
-              sdl_interface_screen_height_in_pixels,
-              sdl_color_depth,
-              sdl_video_flags)) == NULL)
+              sdl2_interface_screen_width_in_pixels,
+              sdl2_interface_screen_height_in_pixels,
+              sdl2_color_depth,
+              sdl2_video_flags)) == NULL)
+        */
+
+      if ((sdl_window = SDL_CreateWindow("fizmo-sdl2",
+          SDL_WINDOWPOS_UNDEFINED,
+          SDL_WINDOWPOS_UNDEFINED,
+          sdl2_interface_screen_width_in_pixels,
+          sdl2_interface_screen_height_in_pixels,
+          SDL_WINDOW_RESIZABLE)) == NULL) {
         i18n_translate_and_exit(
-            fizmo_sdl_module_name,
-            i18n_sdl_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
+            fizmo_sdl2_module_name,
+            i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
             -1,
             "SDL_SetVideoMode");
+      }
+
+      if ((sdl_renderer = SDL_CreateRenderer(sdl_window, -1, 0)) == NULL) {
+        i18n_translate_and_exit(
+            fizmo_sdl2_module_name,
+            i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
+            -1,
+            "SDL_CreateRenderer");
+      }
+
+      if ((Surf_Display = SDL_CreateRGBSurface(
+              0,
+              sdl2_interface_screen_width_in_pixels,
+              sdl2_interface_screen_height_in_pixels,
+              32,
+              0x00FF0000,
+              0x0000FF00,
+              0x000000FF,
+              0xFF000000)) == NULL) {
+        i18n_translate_and_exit(
+            fizmo_sdl2_module_name,
+            i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
+            -1,
+            "SDL_GetWindowSurface");
+      }
+
+      if ((sdlTexture = SDL_CreateTexture(sdl_renderer,
+          SDL_PIXELFORMAT_ARGB8888,
+          SDL_TEXTUREACCESS_STREAMING,
+          sdl2_interface_screen_width_in_pixels,
+          sdl2_interface_screen_height_in_pixels)) == NULL) {
+        i18n_translate_and_exit(
+            fizmo_sdl2_module_name,
+            i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
+            -1,
+            "SDL_CreateTexture");
+      }
 
       timeout_semaphore = SDL_CreateSemaphore(1);
 
