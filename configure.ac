@@ -10,7 +10,11 @@
 # [],
 # [enable_config_files=yes])
 
-AC_INIT([fizmo-sdl2], [0.1.0])
+AC_INIT(
+ [fizmo-sdl2],
+ [0.1.0],
+ fizmo@spellbreaker.org,
+ fizmo-sdl2)
 
 AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
