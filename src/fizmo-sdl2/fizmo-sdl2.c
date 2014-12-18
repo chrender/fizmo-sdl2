@@ -157,8 +157,7 @@ static char *config_option_names[] = {
 };
 */
 
-static z_colour colorname_to_infocomcode(char *colorname)
-{
+static z_colour colorname_to_infocomcode(char *colorname) {
   if      (strcmp(colorname, "black") == 0)
     return Z_COLOUR_BLACK;
   else if (strcmp(colorname, "red") == 0)
@@ -180,12 +179,11 @@ static z_colour colorname_to_infocomcode(char *colorname)
 }
 
 
-static Uint32 z_to_sdl_colour(z_colour z_colour_to_convert)
-{
+static Uint32 z_to_sdl_colour(z_colour z_colour_to_convert) {
   if (z_colour_to_convert == Z_COLOUR_BLACK) {
     return SDL_MapRGB(Surf_Display->format, 0, 0, 0);
   }
-  else if (z_colour_to_convert == Z_COLOUR_RED)    {
+  else if (z_colour_to_convert == Z_COLOUR_RED) {
     return SDL_MapRGB(Surf_Display->format, 255, 0, 0);
   }
   else if (z_colour_to_convert == Z_COLOUR_GREEN) {
@@ -213,194 +211,8 @@ static Uint32 z_to_sdl_colour(z_colour z_colour_to_convert)
 }
 
 
-/*
-static void _PutPixelAlpha(SDL_Surface *surface, Sint16 x, Sint16 y,
-    Uint32 color, Uint8 alpha) { 
-
-  if(x>=SPG_clip_xmin(surface) && x<=SPG_clip_xmax(surface) 
-      && y>=SPG_clip_ymin(surface) && 
-      y<=SPG_clip_ymax(surface)){ 
-    Uint32 Rmask = 
-      surface->format->Rmask, Gmask = surface->format->Gmask, 
-    Bmask = surface->format->Bmask, Amask = 
-      surface->format->Amask; 
-    Uint32 R,G,B,A=SDL_ALPHA_OPAQUE; 
-    Uint32* pixel; 
-
-    switch (surface->format->BytesPerPixel) { 
-      case 1: { 
-
-                Uint8 *pixel = (Uint8 *)surface->pixels + y*surface->pitch + x; 
-
-                Uint8 dR = surface->format->palette->colors[*pixel].r; 
-                Uint8 dG = surface->format->palette->colors[*pixel].g; 
-                Uint8 dB = surface->format->palette->colors[*pixel].b; 
-                Uint8 sR = surface->format->palette->colors[color].r; 
-                Uint8 sG = surface->format->palette->colors[color].g; 
-                Uint8 sB = surface->format->palette->colors[color].b; 
-
-                dR = dR + ((sR-dR)*alpha >> 8); 
-                dG = dG + ((sG-dG)*alpha >> 8); 
-                dB = dB + ((sB-dB)*alpha >> 8); 
-
-                *pixel = SDL_MapRGB(surface->format, dR, dG, dB); 
-
-              } 
-              break; 
-
-      case 2: {
-
-                Uint16 *pixel = (Uint16 *)surface->pixels + y*surface->pitch/2 + x; 
-                Uint32 dc = *pixel; 
-
-                R = ((dc & Rmask) + (( (color & Rmask) - (dc & Rmask) ) * alpha >> 8)) & Rmask; 
-                G = ((dc & Gmask) + (( (color & Gmask) - (dc & Gmask) ) * alpha >> 8)) & Gmask; 
-                B = ((dc & Bmask) + (( (color & Bmask) - (dc & Bmask) ) * alpha >>8) ) & Bmask; 
-                if( Amask ) 
-                  A = ((dc & Amask) + (( (color & Amask) - (dc & Amask) ) * alpha >>8) ) & Amask; 
-
-                *pixel= R | G | B | A; 
-
-              } 
-              break; 
-
-      case 3: { 
-                Uint8 *pix = (Uint8 *)surface->pixels + y * surface->pitch + x*3; 
-                Uint8 rshift8=surface->format->Rshift/8; 
-                Uint8 gshift8=surface->format->Gshift/8; 
-                Uint8 bshift8=surface->format->Bshift/8; 
-                Uint8 ashift8=surface->format->Ashift/8; 
-
-
-
-                Uint8 dR, dG, dB, dA=0; 
-                Uint8 sR, sG, sB, sA=0; 
-
-                pix = (Uint8 *)surface->pixels + y * surface->pitch + x*3; 
-
-                dR = *((pix)+rshift8); 
-                dG = *((pix)+gshift8); 
-                dB = *((pix)+bshift8); 
-                dA = *((pix)+ashift8); 
-
-                sR = (color>>surface->format->Rshift)&0xff; 
-                sG = (color>>surface->format->Gshift)&0xff; 
-                sB = (color>>surface->format->Bshift)&0xff; 
-                sA = (color>>surface->format->Ashift)&0xff; 
-
-                dR = dR + ((sR-dR)*alpha >> 8); 
-                dG = dG + ((sG-dG)*alpha >> 8); 
-                dB = dB + ((sB-dB)*alpha >> 8); 
-                dA = dA + ((sA-dA)*alpha >> 8); 
-
-                *((pix)+rshift8) = dR; 
-                *((pix)+gshift8) = dG; 
-                *((pix)+bshift8) = dB; 
-                *((pix)+ashift8) = dA; 
-
-              } 
-              break; 
-
-      case 4: 
-              pixel = (Uint32*)surface->pixels + y*surface->pitch/4 + x; 
-              Uint32 dc = *pixel; 
-              R = color & Rmask; 
-              G = color & Gmask; 
-              B = color & Bmask; 
-              A = 0; // keep this as 0 to avoid corruption of non-alpha surfaces 
-
-
-              switch(SPG_GetBlend()) 
-              { 
-                case SPG_COMBINE_ALPHA: // Blend and combine src and dest alpha 
-                  if( alpha != SDL_ALPHA_OPAQUE ){ 
-                    R = ((dc & Rmask) + (( R - (dc & Rmask) ) * alpha >> 8)) & Rmask; 
-                    G = ((dc & Gmask) + (( G - (dc & Gmask) ) * alpha >> 8)) & Gmask; 
-                    B = ((dc & Bmask) + (( B - (dc & Bmask) ) * alpha >> 8)) & Bmask; 
-                  } 
-                  if(Amask) 
-
-                    A = ((((dc & Amask) >> surface->format->Ashift) + 
-                          alpha) >> 1) << surface->format->Ashift; 
-                  break; 
-                case SPG_DEST_ALPHA: // Blend and keep dest alpha 
-                  if( alpha != SDL_ALPHA_OPAQUE ){ 
-                    R = ((dc & Rmask) + (( R - (dc & Rmask) ) * alpha >> 8)) & Rmask; 
-                    G = ((dc & Gmask) + (( G - (dc & Gmask) ) * alpha >> 8)) & Gmask; 
-                    B = ((dc & Bmask) + (( B - (dc & Bmask) ) * alpha >> 8)) & Bmask; 
-                  } 
-                  if(Amask) 
-                    A = (dc & Amask); 
-                  break; 
-                case SPG_SRC_ALPHA: // Blend and keep src alpha 
-                  if( alpha != SDL_ALPHA_OPAQUE ){ 
-                    R = ((dc & Rmask) + (( R - (dc & Rmask) ) * alpha >> 8)) & Rmask; 
-                    G = ((dc & Gmask) + (( G - (dc & Gmask) ) * alpha >> 8)) & Gmask; 
-                    B = ((dc & Bmask) + (( B - (dc & Bmask) ) * alpha >> 8)) & Bmask; 
-                  } 
-                  if(Amask) 
-                    A = (alpha << surface->format->Ashift); 
-                  break; 
-                case SPG_COPY_SRC_ALPHA: // Direct copy with src alpha 
-                  if(Amask) 
-                    A = (alpha << surface->format->Ashift); 
-                  break; 
-                case SPG_COPY_DEST_ALPHA: // Direct copy with dest alpha 
-                  if(Amask) 
-                    A = (dc & Amask); 
-                  break; 
-                case SPG_COPY_COMBINE_ALPHA: // Direct copy with combined alpha 
-                  if(Amask) 
-
-                    A = ((((dc & Amask) >> surface->format->Ashift) + 
-                          alpha) >> 1) << surface->format->Ashift; 
-                  break; 
-                case SPG_COPY_NO_ALPHA: // Direct copy, alpha opaque 
-                  if(Amask) 
-                    A = (SDL_ALPHA_OPAQUE << surface->format->Ashift); 
-                  break; 
-                case SPG_COPY_ALPHA_ONLY: // Direct copy of just the alpha 
-                  R = dc & Rmask; 
-                  G = dc & Gmask; 
-                  B = dc & Bmask; 
-                  if(Amask) 
-                    A = (alpha << surface->format->Ashift); 
-                  break; 
-                case SPG_COMBINE_ALPHA_ONLY: // Blend of just the alpha 
-                  R = dc & Rmask; 
-                  G = dc & Gmask; 
-                  B = dc & Bmask; 
-                  if(Amask) 
-
-                    A = ((((dc & Amask) >> surface->format->Ashift) + 
-                          alpha) >> 1) << surface->format->Ashift; 
-                  break; 
-                case SPG_REPLACE_COLORKEY: // Replace the colorkeyed color 
-                  if(!(surface->flags & SDL_SRCCOLORKEY) || dc != surface->format->colorkey) 
-                    return; 
-                  if(Amask) 
-                    A = (alpha << surface->format->Ashift); 
-                  break; 
-              } 
-
-              *pixel = R | G | B | A; 
-              break; 
-    } 
-  } 
-} 
-*/
-
-
-static void draw_rgb_pixel(int y, int x, uint8_t r, uint8_t g, uint8_t b)
-{
+static void draw_rgb_pixel(int y, int x, uint8_t r, uint8_t g, uint8_t b) {
   Uint32 color = SDL_MapRGB(Surf_Display->format, r, g, b);
-
-  //SDL_MapRGBA
-
-  /*
-  printf("%d, %d, %d, %d\n",
-      x, y, pixel_value, Surf_Display->format->BytesPerPixel);
-  */
 
   if ( SDL_MUSTLOCK(Surf_Display) ) {
     if ( SDL_LockSurface(Surf_Display) < 0 ) {
@@ -445,33 +257,29 @@ static void draw_rgb_pixel(int y, int x, uint8_t r, uint8_t g, uint8_t b)
             }
             break;
   }
+
   if ( SDL_MUSTLOCK(Surf_Display) ) {
     SDL_UnlockSurface(Surf_Display);
   }
 }
 
 
-static bool is_input_timeout_available()
-{
+static bool is_input_timeout_available() {
   return true;
 }
 
 
-static char* get_interface_name()
-{
+static char* get_interface_name() {
   return interface_name;
 }
 
 
-static bool is_colour_available()
-{
-  //return has_colors();
+static bool is_colour_available() {
   return true;
 }
 
 
-static void print_startup_syntax()
-{
+static void print_startup_syntax() {
   int i;
   char **available_locales = get_available_locale_names();
 
@@ -495,8 +303,7 @@ static void print_startup_syntax()
       i18n_sdl2_LIBPIXELINTERFACE_VERSION_P0S,
       get_screen_pixel_interface_version());
   streams_latin1_output("\n");
-  if (active_sound_interface != NULL)
-  {
+  if (active_sound_interface != NULL) {
     streams_latin1_output(active_sound_interface->get_interface_name());
     streams_latin1_output(" ");
     streams_latin1_output("version ");
@@ -511,8 +318,7 @@ static void print_startup_syntax()
   streams_latin1_output(" ");
 
   i = 0;
-  while (available_locales[i] != NULL)
-  {
+  while (available_locales[i] != NULL) {
     if (i != 0)
       streams_latin1_output(", ");
 
@@ -536,8 +342,7 @@ static void print_startup_syntax()
       i18n_sdl2_COLORS_AVAILABLE);
   streams_latin1_output(": ");
 
-  for (i=Z_COLOUR_BLACK; i<=Z_COLOUR_WHITE; i++)
-  {
+  for (i=Z_COLOUR_BLACK; i<=Z_COLOUR_WHITE; i++) {
     if (i != Z_COLOUR_BLACK)
       streams_latin1_output(", ");
     streams_latin1_output(z_colour_names[i]);
@@ -681,62 +486,11 @@ static void print_startup_syntax()
 }
 
 
-static int parse_config_parameter(char *UNUSED(key), char *UNUSED(value))
-{
+static int parse_config_parameter(char *UNUSED(key), char *UNUSED(value)) {
   return -2;
 
   /*
-  if (strcmp(key, "enable-xterm-title") == 0)
-  {
-    if (
-        (value == NULL)
-        ||
-        (*value == 0)
-        ||
-        (strcmp(value, config_true_value) == 0)
-       )
-      use_xterm_title = true;
-    else
-      use_xterm_title = false;
-    free(value);
-    return 0;
-  }
-  else if (strcmp(key, "disable-x11-graphics") == 0)
-  {
-#ifdef ENABLE_X11_IMAGES
-    if (
-        (value == NULL)
-        ||
-        (*value == 0)
-        ||
-        (strcmp(value, config_true_value) == 0)
-       )
-      enable_x11_graphics = false;
-    else
-      enable_x11_graphics = true;
-#endif // ENABLE_X11_IMAGES
-    free(value);
-    return 0;
-  }
-  else if (strcmp(key, "display-x11-inline-image") == 0)
-  {
-#ifdef ENABLE_X11_IMAGES
-    if (
-        (value == NULL)
-        ||
-        (*value == 0)
-        ||
-        (strcmp(value, config_true_value) == 0)
-       )
-      enable_x11_inline_graphics = true;
-    else
-      enable_x11_inline_graphics = false;
-#endif // ENABLE_X11_IMAGES
-    free(value);
-    return 0;
-  }
-  else if (strcmp(key, "dont-update-story-list") == 0)
-  {
+  if (strcmp(key, "dont-update-story-list") == 0) {
     if (
         (value == NULL)
         ||
@@ -748,66 +502,36 @@ static int parse_config_parameter(char *UNUSED(key), char *UNUSED(value))
     free(value);
     return 0;
   }
-  else
-  {
+  else {
     return -2;
   }
   */
 }
 
 
-static char *get_config_value(char *UNUSED(key))
-{
+static char *get_config_value(char *UNUSED(key)) {
   return NULL;
 
   /*
-  if (strcmp(key, "enable-xterm-title") == 0)
-  {
-    return use_xterm_title == true
-      ? config_true_value
-      : config_false_value;
-  }
-  else if (strcmp(key, "disable-x11-graphics") == 0)
-  {
-#ifdef ENABLE_X11_IMAGES
-    return enable_x11_graphics == false
-      ? config_true_value
-      : config_false_value;
-#endif // ENABLE_X11_IMAGES
-    return config_true_value;
-  }
-  else if (strcmp(key, "display-x11-inline-image") == 0)
-  {
-#ifdef ENABLE_X11_IMAGES
-    return enable_x11_inline_graphics == true
-      ? config_true_value
-      : config_false_value;
-#endif // ENABLE_X11_IMAGES
-    return config_false_value;
-  }
-  else if (strcmp(key, "dont-update-story-list") == 0)
-  {
+  if (strcmp(key, "dont-update-story-list") == 0) {
     return dont_update_story_list_on_start == true
       ? config_true_value
       : config_false_value;
   }
-  else
-  {
+  else {
     return NULL;
   }
   */
 }
 
 
-static char **get_config_option_names()
-{
+static char **get_config_option_names() {
   //return config_option_names;
   return NULL;
 }
 
 
-static void link_interface_to_story(struct z_story *story)
-{
+static void link_interface_to_story(struct z_story *story) {
   SDL_FillRect(
       Surf_Display,
       &Surf_Display->clip_rect,
@@ -883,13 +607,11 @@ static void link_interface_to_story(struct z_story *story)
 }
 
 
-static void reset_interface()
-{
+static void reset_interface() {
 }
 
 
-static int sdl2_close_interface(z_ucs *UNUSED(error_message))
-{
+static int sdl2_close_interface(z_ucs *UNUSED(error_message)) {
   return 0;
 /*
   z_ucs *ptr;
@@ -963,8 +685,7 @@ static attr_t sdl2_z_style_to_attr_t(int16_t style_data)
 */
 
 
-static void output_interface_info()
-{
+static void output_interface_info() {
   (void)i18n_translate(
       fizmo_sdl2_module_name,
       i18n_sdl2_FIZMO_SDL_VERSION_P0S,
@@ -981,8 +702,7 @@ static void output_interface_info()
 
 
 /*
-static void refresh_screen_size()
-{
+static void refresh_screen_size() {
   getmaxyx(
       stdscr,
       sdl2_interface_screen_height,
@@ -991,21 +711,18 @@ static void refresh_screen_size()
 */
 
 
-static int get_screen_width_in_pixels()
-{
+static int get_screen_width_in_pixels() {
   return sdl2_interface_screen_width_in_pixels;
 }
 
 
-static int get_screen_height_in_pixels()
-{
+static int get_screen_height_in_pixels() {
   return sdl2_interface_screen_height_in_pixels;
 }
 
 
 /*
-static void sdl2_if_catch_signal(int sig_num)
-{
+static void sdl2_if_catch_signal(int sig_num) {
   int bytes_written = 0;
   int ret_val;
   int sdl_if_write_buffer;
@@ -1018,8 +735,7 @@ static void sdl2_if_catch_signal(int sig_num)
 
   //TRACE_LOG("Caught signal %d.\n", sig_num);
 
-  while ((size_t)bytes_written < sizeof(int))
-  {
+  while ((size_t)bytes_written < sizeof(int)) {
     ret_val = write(
         sdl_if_signalling_pipe[1],
         &sdl_if_write_buffer,
@@ -1052,8 +768,6 @@ static Uint32 timeout_callback(Uint32 interval, void *UNUSED(param)) {
     SDL_RemoveTimer(timeout_timer);
     timeout_timer_exists = false;
 
-    //printf("event, interval: %d\n", interval);
-
     userevent.type = SDL_USEREVENT;
     userevent.code = 0;
     userevent.data1 = NULL;
@@ -1071,8 +785,7 @@ static Uint32 timeout_callback(Uint32 interval, void *UNUSED(param)) {
 }
 
 
-static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
-{
+static int get_next_event(z_ucs *z_ucs_input, int timeout_millis) {
   bool running = true;
   SDL_Event Event;
   int wait_result, result = -1;
@@ -1224,8 +937,7 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
         ? sdl_if_signalling_pipe[0]
         : STDIN_FILENO) + 1;
 
-  if (timeout_millis > 0)
-  {
+  if (timeout_millis > 0) {
     TRACE_LOG("input timeout: %d ms. (%d/%d)\n", timeout_millis,
         timeout_millis - (timeout_millis % 1000), 
         (timeout_millis % 1000) * 1000);
@@ -1235,8 +947,7 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
     setitimer(ITIMER_REAL, &timerval, NULL);
   }
 
-  while (input_should_terminate == false)
-  {
+  while (input_should_terminate == false) {
     TRACE_LOG("current errno: %d.\n", errno);
     TRACE_LOG("setting up selectors.\n");
 
@@ -1251,22 +962,18 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
         NULL,
         NULL);
 
-    if (select_retval > 0)
-    {
+    if (select_retval > 0) {
       TRACE_LOG("select_retval > 0.\n");
       TRACE_LOG("current errno: %d.\n", errno);
 
       // something has changed in one of out input pipes.
-      if (FD_ISSET(STDIN_FILENO, &input_selectors))
-      {
+      if (FD_ISSET(STDIN_FILENO, &input_selectors)) {
         // some user input is waiting. we'll read until getch() returned
         // err, meaning "no more input availiable" in the nonblocking mode.
         input_return_code = get_wch(&input);
-        if (input_return_code == ERR)
-        {
+        if (input_return_code == ERR) {
         }
-        else if (input_return_code == KEY_CODE_YES)
-        {
+        else if (input_return_code == KEY_CODE_YES) {
           if (input == KEY_UP)
             result = EVENT_WAS_CODE_CURSOR_UP;
           else if (input == KEY_DOWN)
@@ -1282,8 +989,7 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
           else if (input == KEY_BACKSPACE)
             result = EVENT_WAS_CODE_BACKSPACE;
         }
-        else if (input_return_code == OK)
-        {
+        else if (input_return_code == OK) {
           if ( (input == 127) || (input == 8) )
             result = EVENT_WAS_CODE_BACKSPACE;
           else if (input == 1)
@@ -1292,8 +998,7 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
             result = EVENT_WAS_CODE_CTRL_E;
           else if (input == 27)
             result = EVENT_WAS_CODE_ESC;
-          else
-          {
+          else {
             result = EVENT_WAS_INPUT;
             *z_ucs_input = (z_ucs)input;
           }
@@ -1301,8 +1006,7 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
 
         input_should_terminate = true;
       }
-      else if (FD_ISSET(sdl_if_signalling_pipe[0], &input_selectors))
-      {
+      else if (FD_ISSET(sdl_if_signalling_pipe[0], &input_selectors)) {
         TRACE_LOG("current errno: %d.\n", errno);
         // the signal handler has written to our curses_if_signalling_pipe.
         // ensure that errno is != 0 before reading from the pipe. this is
@@ -1312,22 +1016,18 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
 
         bytes_read = 0;
 
-        while (bytes_read != sizeof(int))
-        {
+        while (bytes_read != sizeof(int)) {
           read_retval = read(
               sdl_if_signalling_pipe[0],
               &new_signal,
               sizeof(int));
 
-          if (read_retval == -1)
-          {
-            if (errno == EAGAIN)
-            {
+          if (read_retval == -1) {
+            if (errno == EAGAIN) {
               errno = 0;
               continue;
             }
-            else
-            {
+            else {
               i18n_translate_and_exit(
                   fizmo_sdl2_module_name,
                   i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
@@ -1337,25 +1037,21 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
                   strerror(errno));
             }
           }
-          else
-          {
+          else {
             bytes_read += read_retval;
           }
         }
 
         TRACE_LOG("bytes read: %d,signal code: %d\n", bytes_read, new_signal);
 
-        if (new_signal == SIGALRM)
-        {
-          if (timeout_millis > 0)
-          {
+        if (new_signal == SIGALRM) {
+          if (timeout_millis > 0) {
             TRACE_LOG("Timeout.\n");
             result = EVENT_WAS_TIMEOUT;
             input_should_terminate = true;
           }
         }
-        else if (new_signal == SIGWINCH)
-        {
+        else if (new_signal == SIGWINCH) {
           TRACE_LOG("interface got SIGWINCH.\n");
           result = EVENT_WAS_WINCH;
 
@@ -1367,8 +1063,7 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
           //new_cell_screen_size(screen_height, screen_width);
           input_should_terminate = true;
         }
-        else
-        {
+        else {
           i18n_translate_and_exit(
               fizmo_sdl2_module_name,
               i18n_sdl2_UNKNOWN_ERROR_CASE,
@@ -1376,12 +1071,10 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
         }
       }
     }
-    else
-    {
+    else {
       if (errno == EINTR)
         errno = 0;
-      else
-      {
+      else {
         TRACE_LOG("select returned <=0, current errno: %d.\n", errno);
       }
     }
@@ -1396,8 +1089,7 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis)
 }
 
 
-void update_screen()
-{
+void update_screen() {
   TRACE_LOG("Doing update_screen().\n");
   //SDL_UpdateRect(Surf_Display, 0, 0, 0, 0);
   //SDL_Flip(Surf_Display);
@@ -1408,8 +1100,7 @@ void update_screen()
 }
 
 
-void redraw_screen_from_scratch()
-{
+void redraw_screen_from_scratch() {
   /*
   redrawwin(stdscr);
   update_screen();
@@ -1417,8 +1108,7 @@ void redraw_screen_from_scratch()
 }
 
 
-void copy_area(int dsty, int dstx, int srcy, int srcx, int height, int width)
-{
+void copy_area(int dsty, int dstx, int srcy, int srcx, int height, int width) {
   int y;
 
   /*
@@ -1483,8 +1173,7 @@ void copy_area(int dsty, int dstx, int srcy, int srcx, int height, int width)
 
 
 void fill_area(int startx, int starty, int xsize, int ysize,
-    z_rgb_colour colour)
-{
+    z_rgb_colour colour) {
   int y, x;
   Uint32 sdl_colour;
 
@@ -1544,17 +1233,16 @@ void fill_area(int startx, int starty, int xsize, int ysize,
             }
             break;
   }
+
   if ( SDL_MUSTLOCK(Surf_Display) ) {
     SDL_UnlockSurface(Surf_Display);
   }
 }
 
 
-static void set_cursor_visibility(bool UNUSED(visible))
-{
+static void set_cursor_visibility(bool UNUSED(visible)) {
   /*
-  if (sdl2_interface_open == true)
-  {
+  if (sdl2_interface_open == true) {
     if (visible == true)
       curs_set(1);
     else
@@ -1564,22 +1252,18 @@ static void set_cursor_visibility(bool UNUSED(visible))
 }
 
 
-static z_colour get_default_foreground_colour()
-{
+static z_colour get_default_foreground_colour() {
   return Z_COLOUR_WHITE;
 }
 
 
-static z_colour get_default_background_colour()
-{
+static z_colour get_default_background_colour() {
   return Z_COLOUR_BLACK;
 }
 
 
-static int console_output(z_ucs *output)
-{
-  while (*output != 0)
-  {
+static int console_output(z_ucs *output) {
+  while (*output != 0) {
     zucs_string_to_utf8_string(
         output_char_buf,
         &output,
@@ -1594,8 +1278,7 @@ static int console_output(z_ucs *output)
 }
 
 
-static struct z_screen_pixel_interface sdl2_interface =
-{
+static struct z_screen_pixel_interface sdl2_interface = {
   &draw_rgb_pixel,
   &is_input_timeout_available,
   &get_next_event,
@@ -1622,8 +1305,7 @@ static struct z_screen_pixel_interface sdl2_interface =
 
 
 /*
-void catch_signal(int sig_num)
-{
+void catch_signal(int sig_num) {
   int bytes_written = 0;
   int ret_val;
   int sdl_if_write_buffer;
@@ -1636,8 +1318,7 @@ void catch_signal(int sig_num)
 
   //TRACE_LOG("Caught signal %d.\n", sig_num);
 
-  while ((size_t)bytes_written < sizeof(int))
-  {
+  while ((size_t)bytes_written < sizeof(int)) {
     ret_val = write(
         sdl_if_signalling_pipe[1],
         &sdl_if_write_buffer,
@@ -1660,8 +1341,7 @@ void catch_signal(int sig_num)
 */
 
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   int argi = 1;
   int story_filename_parameter_number = -1;
   int blorb_filename_parameter_number = -1;
@@ -1692,19 +1372,15 @@ int main(int argc, char *argv[])
 
   fizmo_register_screen_pixel_interface(&sdl2_interface);
 
-  while (argi < argc)
-  {
+  while (argi < argc) {
     if ((strcmp(argv[argi], "-l") == 0)
-        || (strcmp(argv[argi], "--set-locale") == 0))
-    {
-      if (++argi == argc)
-      {
+        || (strcmp(argv[argi], "--set-locale") == 0)) {
+      if (++argi == argc) {
         print_startup_syntax();
         exit(EXIT_FAILURE);
       }
 
-      if (set_current_locale_name(argv[argi]) != 0)
-      {
+      if (set_current_locale_name(argv[argi]) != 0) {
         streams_latin1_output("\n");
 
         i18n_translate(
@@ -1723,42 +1399,35 @@ int main(int argc, char *argv[])
       argi++;
     }
     else if ((strcmp(argv[argi], "-pr") == 0)
-        || (strcmp(argv[argi], "--predictable") == 0))
-    {
+        || (strcmp(argv[argi], "--predictable") == 0)) {
       set_configuration_value("random-mode", "predictable");
       argi += 1;
     }
     else if ((strcmp(argv[argi], "-ra") == 0)
-        || (strcmp(argv[argi], "--random") == 0))
-    {
+        || (strcmp(argv[argi], "--random") == 0)) {
       set_configuration_value("random-mode", "random");
       argi += 1;
     }
     else if ((strcmp(argv[argi], "-st") == 0)
-        || (strcmp(argv[argi], "--start-transcript") == 0))
-    {
+        || (strcmp(argv[argi], "--start-transcript") == 0)) {
       set_configuration_value("start-script-when-story-starts", "true");
       argi += 1;
     }
     else if ((strcmp(argv[argi], "-rc") == 0)
-        || (strcmp(argv[argi], "--start-recording-commands") == 0))
-    {
+        || (strcmp(argv[argi], "--start-recording-commands") == 0)) {
       set_configuration_value(
           "start-command-recording-when-story-starts", "true");
       argi += 1;
     }
     else if ((strcmp(argv[argi], "-fi") == 0)
-        || (strcmp(argv[argi], "--start-file-input") == 0))
-    {
+        || (strcmp(argv[argi], "--start-file-input") == 0)) {
       set_configuration_value(
           "start-file-input-when-story-starts", "true");
       argi += 1;
     }
     else if ((strcmp(argv[argi], "-if") == 0)
-        || (strcmp(argv[argi], "--input-filename") == 0))
-    {
-      if (++argi == argc)
-      {
+        || (strcmp(argv[argi], "--input-filename") == 0)) {
+      if (++argi == argc) {
         print_startup_syntax();
         exit(EXIT_FAILURE);
       }
@@ -1767,10 +1436,8 @@ int main(int argc, char *argv[])
       argi += 1;
     }
     else if ((strcmp(argv[argi], "-rf") == 0)
-        || (strcmp(argv[argi], "--record-filename") == 0))
-    {
-      if (++argi == argc)
-      {
+        || (strcmp(argv[argi], "--record-filename") == 0)) {
+      if (++argi == argc) {
         print_startup_syntax();
         exit(EXIT_FAILURE);
       }
@@ -1779,10 +1446,8 @@ int main(int argc, char *argv[])
       argi += 1;
     }
     else if ((strcmp(argv[argi], "-tf") == 0)
-        || (strcmp(argv[argi], "--transcript-filename") == 0))
-    {
-      if (++argi == argc)
-      {
+        || (strcmp(argv[argi], "--transcript-filename") == 0)) {
+      if (++argi == argc) {
         print_startup_syntax();
         exit(EXIT_FAILURE);
       }
@@ -1792,16 +1457,13 @@ int main(int argc, char *argv[])
     }
     else if (
         (strcmp(argv[argi], "-b") == 0)
-        || (strcmp(argv[argi], "--background-color") == 0) )
-    {
-      if (++argi == argc)
-      {
+        || (strcmp(argv[argi], "--background-color") == 0) ) {
+      if (++argi == argc) {
         print_startup_syntax();
         exit(EXIT_FAILURE);
       }
 
-      if ((new_color = colorname_to_infocomcode(argv[argi])) == -1)
-      {
+      if ((new_color = colorname_to_infocomcode(argv[argi])) == -1) {
         print_startup_syntax();
         exit(EXIT_FAILURE);
       }
@@ -1811,16 +1473,13 @@ int main(int argc, char *argv[])
     }
     else if (
         (strcmp(argv[argi], "-f") == 0)
-        || (strcmp(argv[argi], "--foreground-color") == 0) )
-    {
-      if (++argi == argc)
-      {
+        || (strcmp(argv[argi], "--foreground-color") == 0) ) {
+      if (++argi == argc) {
         print_startup_syntax();
         exit(EXIT_FAILURE);
       }
 
-      if ((new_color = colorname_to_infocomcode(argv[argi])) == -1)
-      {
+      if ((new_color = colorname_to_infocomcode(argv[argi])) == -1) {
         print_startup_syntax();
         exit(EXIT_FAILURE);
       }
@@ -1830,76 +1489,52 @@ int main(int argc, char *argv[])
     }
     else if (
         (strcmp(argv[argi], "-um") == 0)
-        ||
-        (strcmp(argv[argi], "--umem") == 0)
-        )
-    {
+        || (strcmp(argv[argi], "--umem") == 0) ) {
       set_configuration_value("quetzal-umem", "true");
       argi ++;
     }
     else if (
         (strcmp(argv[argi], "-dh") == 0)
-        ||
-        (strcmp(argv[argi], "--disable-hyphenation") == 0)
-        )
-    {
+        || (strcmp(argv[argi], "--disable-hyphenation") == 0) ) {
       set_configuration_value("disable-hyphenation", "true");
       argi ++;
     }
     else if (
         (strcmp(argv[argi], "-nc") == 0)
-        || (strcmp(argv[argi], "--dont-use-colors: ") == 0) )
-    {
+        || (strcmp(argv[argi], "--dont-use-colors: ") == 0) ) {
       set_configuration_value("disable-color", "true");
       argi ++;
     }
     else if (
         (strcmp(argv[argi], "-ec") == 0)
-        || (strcmp(argv[argi], "--enable-colors: ") == 0) )
-    {
+        || (strcmp(argv[argi], "--enable-colors: ") == 0) ) {
       set_configuration_value("enable-color", "true");
       argi ++;
     }
-    else if (
-        (strcmp(argv[argi], "-ds") == 0)
-        ||
-        (strcmp(argv[argi], "--disable-sound") == 0))
-    {
+    else if ( (strcmp(argv[argi], "-ds") == 0)
+        || (strcmp(argv[argi], "--disable-sound") == 0) ) {
       set_configuration_value("disable-sound", "true");
       argi += 1;
     }
     else if (
         (strcmp(argv[argi], "-t") == 0)
-        ||
-        (strcmp(argv[argi], "--set-tandy-flag") == 0))
-    {
+        || (strcmp(argv[argi], "--set-tandy-flag") == 0) ) {
       set_configuration_value("set-tandy-flag", "true");
       argi += 1;
     }
-    else if (
-        (strcmp(argv[argi], "-lm") == 0)
-        ||
-        (strcmp(argv[argi], "-rm") == 0)
-        ||
-        (strcmp(argv[argi], "--left-margin") == 0)
-        ||
-        (strcmp(argv[argi], "--right-margin") == 0)
-        )
-    {
-      if (++argi == argc)
-      {
+    else if ( (strcmp(argv[argi], "-lm") == 0)
+        || (strcmp(argv[argi], "-rm") == 0)
+        || (strcmp(argv[argi], "--left-margin") == 0)
+        || (strcmp(argv[argi], "--right-margin") == 0) ) {
+      if (++argi == argc) {
         print_startup_syntax();
         exit(EXIT_FAILURE);
       }
 
       int_value = atoi(argv[argi]);
 
-      if (
-          ( (int_value == 0) && (strcmp(argv[argi], "0") != 0) )
-          ||
-          (int_value < 0)
-         )
-      {
+      if ( ( (int_value == 0) && (strcmp(argv[argi], "0") != 0) )
+          || (int_value < 0) ) {
         i18n_translate(
             fizmo_sdl2_module_name,
             i18n_sdl2_INVALID_CONFIGURATION_VALUE_P0S_FOR_P1S,
@@ -1912,46 +1547,35 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
       }
 
-      if (
-          (strcmp(argv[argi - 1], "-lm") == 0)
-          ||
-          (strcmp(argv[argi - 1], "--left-margin") == 0)
-         )
+      if ( (strcmp(argv[argi - 1], "-lm") == 0)
+          || (strcmp(argv[argi - 1], "--left-margin") == 0) ) {
         set_custom_left_pixel_margin(int_value);
-      else
+      }
+      else {
         set_custom_right_pixel_margin(int_value);
+      }
 
       argi += 1;
     }
-    else if (
-        (strcmp(argv[argi], "-h") == 0)
-        ||
-        (strcmp(argv[argi], "--help") == 0)
-        )
-    {
+    else if ( (strcmp(argv[argi], "-h") == 0)
+        || (strcmp(argv[argi], "--help") == 0) ) {
       print_startup_syntax();
       exit(0);
     }
-    else if (
-        (strcmp(argv[argi], "-sy") == 0)
-        ||
-        (strcmp(argv[argi], "--sync-transcript") == 0))
-    {
+    else if ( (strcmp(argv[argi], "-sy") == 0)
+        || (strcmp(argv[argi], "--sync-transcript") == 0) ) {
       set_configuration_value("sync-transcript", "true");
       argi += 1;
     }
-    else if (story_filename_parameter_number == -1)
-    {
+    else if (story_filename_parameter_number == -1) {
       story_filename_parameter_number = argi;
       argi++;
     }
-    else if (blorb_filename_parameter_number == -1)
-    {
+    else if (blorb_filename_parameter_number == -1) {
       blorb_filename_parameter_number = argi;
       argi++;
     }
-    else
-    {
+    else {
       // Unknown parameter:
       print_startup_syntax();
       exit(EXIT_FAILURE);
@@ -1970,8 +1594,7 @@ int main(int argc, char *argv[])
     story_stream = fsi->openfile(
         input_file, FILETYPE_DATA, FILEACCESS_READ);
 
-    if (story_stream == NULL)
-    {
+    if (story_stream == NULL) {
       i18n_translate_and_exit(
           fizmo_sdl2_module_name,
           i18n_sdl2_COULD_NOT_OPEN_OR_FIND_P0S,
