@@ -785,11 +785,14 @@ static Uint32 timeout_callback(Uint32 interval, void *UNUSED(param)) {
 }
 
 
-static int get_next_event(z_ucs *z_ucs_input, int timeout_millis) {
+static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
+    bool poll_only) {
   bool running = true;
   SDL_Event Event;
   int wait_result, result = -1;
   char *ptr;
+
+  TRACE_LOG("Invoked get_next_event.\n");
 
   if (timeout_millis > 0) {
     //printf("input timeout: %d ms.\n", timeout_millis);
@@ -801,7 +804,17 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis) {
   }
 
   //printf("polling...\n");
-  while ((running == true) && (wait_result = SDL_WaitEvent(&Event))) {
+  while (running == true) {
+    if (poll_only == true) {
+      wait_result = SDL_PollEvent(&Event);
+      if (wait_result == 0) {
+        return EVENT_WAS_NOTHING;
+      }
+    }
+    else {
+      wait_result = SDL_WaitEvent(&Event);
+    }
+
     if (Event.type == SDL_QUIT) {
       TRACE_LOG("quit\n");
       running = false;
@@ -853,9 +866,9 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis) {
         sdl2_interface_screen_width_in_pixels = Event.window.data1;
         sdl2_interface_screen_height_in_pixels = Event.window.data2;
 
-        printf("resize: %d x %d.\n",
-            sdl2_interface_screen_width_in_pixels,
-            sdl2_interface_screen_height_in_pixels);
+        //printf("resize: %d x %d.\n",
+        //    sdl2_interface_screen_width_in_pixels,
+        //    sdl2_interface_screen_height_in_pixels);
 
         SDL_SetWindowSize(sdl_window,
             sdl2_interface_screen_width_in_pixels,
@@ -891,13 +904,22 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis) {
               "SDL_CreateTexture");
         }
 
+        /*
         new_pixel_screen_size(
             sdl2_interface_screen_height_in_pixels,
             sdl2_interface_screen_width_in_pixels);
+        */
+
+        result = EVENT_WAS_WINCH;
+        running = false;
       }
     }
     else if (Event.type == SDL_USEREVENT) {
       result = EVENT_WAS_TIMEOUT;
+      running = false;
+    }
+
+    if (poll_only == true) {
       running = false;
     }
   }
