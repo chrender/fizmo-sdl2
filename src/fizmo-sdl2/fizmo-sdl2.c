@@ -92,7 +92,7 @@ static z_colour screen_default_foreground_color = Z_COLOUR_BLACK;
 static z_colour screen_default_background_color = Z_COLOUR_WHITE;
 static int sdl2_interface_screen_height_in_pixels = 800;
 static int sdl2_interface_screen_width_in_pixels = 600;
-static const int sdl_color_depth = 32;
+//static const int sdl_color_depth = 32;
 //static const int sdl_video_flags = SDL_SWSURFACE | SDL_ANYFORMAT
 //| SDL_DOUBLEBUF | SDL_RESIZABLE;
 static SDL_TimerID timeout_timer;
@@ -805,10 +805,16 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
 
   //printf("polling...\n");
   while (running == true) {
+
     if (poll_only == true) {
       wait_result = SDL_PollEvent(&Event);
+      TRACE_LOG("poll's wait_result: %d.\n", wait_result);
+
       if (wait_result == 0) {
-        return EVENT_WAS_NOTHING;
+        result = EVENT_WAS_NOTHING;
+      }
+      else {
+        TRACE_LOG("poll's eventtype: %d.\n", Event.type);
       }
     }
     else {
@@ -854,8 +860,9 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
        }
     }
     else if (Event.type == SDL_WINDOWEVENT) {
+      TRACE_LOG("Found SDL_WINDOWEVENT: %d.\n", Event.window.event);
       if (Event.window.event == SDL_WINDOWEVENT_RESIZED) {
-        TRACE_LOG("resize\n");
+        TRACE_LOG("Found SDL_WINDOWEVENT_RESIZED.\n");
 
         /*
            SDL_Log("Window %d resized to %dx%d",
@@ -920,7 +927,9 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
     }
 
     if (poll_only == true) {
-      running = false;
+      if (result != -1) {
+        running = false;
+      }
     }
   }
 
@@ -933,7 +942,7 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
     SDL_SemPost(timeout_semaphore);
   }
 
-  TRACE_LOG("return\n");
+  TRACE_LOG("Returning from get_next_event.\n");
   //printf("return\n");
 
   return result;
