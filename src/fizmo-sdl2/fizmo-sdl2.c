@@ -78,6 +78,8 @@
 #endif //ENABLE_X11_IMAGES
 
 #define SDL_OUTPUT_CHAR_BUF_SIZE 80
+#define MINIMUM_X_WINDOW_SIZE 200
+#define MINIMUM_Y_WINDOW_SIZE 100
 /*
 #define SDL_WCHAR_T_BUF_SIZE 64
 #define SDL_Z_UCS_BUF_SIZE 32
@@ -858,6 +860,14 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
          *z_ucs_input = Z_UCS_NEWLINE;
          running = false;
        }
+       else if (Event.key.keysym.sym == SDLK_PAGEDOWN) {
+         result = EVENT_WAS_CODE_PAGE_DOWN;
+         running = false;
+       }
+       else if (Event.key.keysym.sym == SDLK_PAGEUP) {
+         result = EVENT_WAS_CODE_PAGE_UP;
+         running = false;
+       }
     }
     else if (Event.type == SDL_WINDOWEVENT) {
       TRACE_LOG("Found SDL_WINDOWEVENT: %d.\n", Event.window.event);
@@ -870,12 +880,19 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
            event->window.data2);
            */
 
-        sdl2_interface_screen_width_in_pixels = Event.window.data1;
-        sdl2_interface_screen_height_in_pixels = Event.window.data2;
+        sdl2_interface_screen_width_in_pixels
+          = Event.window.data1 < MINIMUM_X_WINDOW_SIZE
+          ? MINIMUM_X_WINDOW_SIZE
+          : Event.window.data1;
 
-        //printf("resize: %d x %d.\n",
-        //    sdl2_interface_screen_width_in_pixels,
-        //    sdl2_interface_screen_height_in_pixels);
+        sdl2_interface_screen_height_in_pixels
+          = Event.window.data2 < MINIMUM_Y_WINDOW_SIZE
+          ? MINIMUM_Y_WINDOW_SIZE
+          : Event.window.data2;
+
+        printf("resize: %d x %d.\n",
+            sdl2_interface_screen_width_in_pixels,
+            sdl2_interface_screen_height_in_pixels);
 
         SDL_SetWindowSize(sdl_window,
             sdl2_interface_screen_width_in_pixels,
@@ -1142,10 +1159,8 @@ void redraw_screen_from_scratch() {
 void copy_area(int dsty, int dstx, int srcy, int srcx, int height, int width) {
   int y;
 
-  /*
-  printf("copy-area: %d, %d to %d, %d: %d x %d.\n",
+  TRACE_LOG("copy-area: %d, %d to %d, %d: %d x %d.\n",
       srcx, srcy, dstx, dsty, width, height);
-  */
 
   if ( SDL_MUSTLOCK(Surf_Display) ) {
     if ( SDL_LockSurface(Surf_Display) < 0 ) {
@@ -1184,15 +1199,29 @@ void copy_area(int dsty, int dstx, int srcy, int srcx, int height, int width) {
             */
 
     case 4: { /* Probably 32-bpp */
-              Uint32 *srcp = (Uint32 *)Surf_Display->pixels
-                + srcy*Surf_Display->pitch/4 + srcx;
-              Uint32 *dstp = (Uint32 *)Surf_Display->pixels
-                + dsty*Surf_Display->pitch/4 + dstx;
+              if (srcy > dsty) {
+                Uint32 *srcp = (Uint32 *)Surf_Display->pixels
+                  + srcy*Surf_Display->pitch/4 + srcx;
+                Uint32 *dstp = (Uint32 *)Surf_Display->pixels
+                  + dsty*Surf_Display->pitch/4 + dstx;
 
-              for (y=0; y<height; y++) {
-                memcpy(dstp, srcp, width*4);
-                srcp += Surf_Display->pitch/4;
-                dstp += Surf_Display->pitch/4;
+                for (y=0; y<height; y++) {
+                  memcpy(dstp, srcp, width*4);
+                  srcp += Surf_Display->pitch/4;
+                  dstp += Surf_Display->pitch/4;
+                }
+              }
+              else {
+                Uint32 *srcp = (Uint32 *)Surf_Display->pixels
+                  + (srcy+height)*Surf_Display->pitch/4 + srcx;
+                Uint32 *dstp = (Uint32 *)Surf_Display->pixels
+                  + (dsty+height)*Surf_Display->pitch/4 + dstx;
+
+                for (y=0; y<height; y++) {
+                  memcpy(dstp, srcp, width*4);
+                  srcp -= Surf_Display->pitch/4;
+                  dstp -= Surf_Display->pitch/4;
+                }
               }
             }
             break;
