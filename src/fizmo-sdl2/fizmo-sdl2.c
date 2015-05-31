@@ -1213,9 +1213,9 @@ void copy_area(int dsty, int dstx, int srcy, int srcx, int height, int width) {
               }
               else {
                 Uint32 *srcp = (Uint32 *)Surf_Display->pixels
-                  + (srcy+height)*Surf_Display->pitch/4 + srcx;
+                  + (srcy+(height-1))*Surf_Display->pitch/4 + srcx;
                 Uint32 *dstp = (Uint32 *)Surf_Display->pixels
-                  + (dsty+height)*Surf_Display->pitch/4 + dstx;
+                  + (dsty+(height-1))*Surf_Display->pitch/4 + dstx;
 
                 for (y=0; y<height; y++) {
                   memcpy(dstp, srcp, width*4);
