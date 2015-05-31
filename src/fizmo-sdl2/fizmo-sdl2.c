@@ -890,9 +890,11 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
           ? MINIMUM_Y_WINDOW_SIZE
           : Event.window.data2;
 
+        /*
         printf("resize: %d x %d.\n",
             sdl2_interface_screen_width_in_pixels,
             sdl2_interface_screen_height_in_pixels);
+        */
 
         SDL_SetWindowSize(sdl_window,
             sdl2_interface_screen_width_in_pixels,
