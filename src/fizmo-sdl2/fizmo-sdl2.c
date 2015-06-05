@@ -793,6 +793,7 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
   SDL_Event Event;
   int wait_result, result = -1;
   char *ptr;
+  const Uint8 *state;
 
   TRACE_LOG("Invoked get_next_event.\n");
 
@@ -835,39 +836,59 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
       running = false;
     }
     else if (Event.type == SDL_KEYDOWN) {
-       if (Event.key.keysym.sym == SDLK_LEFT) {
-          result = EVENT_WAS_CODE_CURSOR_LEFT;
+      TRACE_LOG("Event was keydown.\n");
+      // https://wiki.libsdl.org/SDL_Scancode
+
+      state = SDL_GetKeyboardState(NULL);
+      if ( (state[SDL_SCANCODE_LCTRL])|| (state[SDL_SCANCODE_RCTRL]) ) {
+        TRACE_LOG("ctrl\n");
+        if (state[SDL_SCANCODE_L]) {
+          TRACE_LOG("ctrl-l.\n");
+          result = EVENT_WAS_CODE_CTRL_L;
           running = false;
-       }
-       else if (Event.key.keysym.sym == SDLK_RIGHT) {
-         result = EVENT_WAS_CODE_CURSOR_RIGHT;
-         running = false;
-       }
-       else if (Event.key.keysym.sym == SDLK_DOWN) {
-         result = EVENT_WAS_CODE_CURSOR_DOWN;
-         running = false;
-       }
-       else if (Event.key.keysym.sym == SDLK_UP) {
-         result = EVENT_WAS_CODE_CURSOR_UP;
-         running = false;
-       }
-       else if (Event.key.keysym.sym == SDLK_BACKSPACE) {
-         result = EVENT_WAS_CODE_BACKSPACE;
-         running = false;
-       }
-       else if (Event.key.keysym.sym == SDLK_RETURN) {
+        }
+        else if (state[SDL_SCANCODE_A]) {
+          result = EVENT_WAS_CODE_CTRL_A;
+          running = false;
+        }
+        else if (state[SDL_SCANCODE_E]) {
+          result = EVENT_WAS_CODE_CTRL_E;
+          running = false;
+        }
+      }
+      else if (Event.key.keysym.sym == SDLK_LEFT) {
+        result = EVENT_WAS_CODE_CURSOR_LEFT;
+        running = false;
+      }
+      else if (Event.key.keysym.sym == SDLK_RIGHT) {
+        result = EVENT_WAS_CODE_CURSOR_RIGHT;
+        running = false;
+      }
+      else if (Event.key.keysym.sym == SDLK_DOWN) {
+        result = EVENT_WAS_CODE_CURSOR_DOWN;
+        running = false;
+      }
+      else if (Event.key.keysym.sym == SDLK_UP) {
+        result = EVENT_WAS_CODE_CURSOR_UP;
+        running = false;
+      }
+      else if (Event.key.keysym.sym == SDLK_BACKSPACE) {
+        result = EVENT_WAS_CODE_BACKSPACE;
+        running = false;
+      }
+      else if (Event.key.keysym.sym == SDLK_RETURN) {
         result = EVENT_WAS_INPUT;
-         *z_ucs_input = Z_UCS_NEWLINE;
-         running = false;
-       }
-       else if (Event.key.keysym.sym == SDLK_PAGEDOWN) {
-         result = EVENT_WAS_CODE_PAGE_DOWN;
-         running = false;
-       }
-       else if (Event.key.keysym.sym == SDLK_PAGEUP) {
-         result = EVENT_WAS_CODE_PAGE_UP;
-         running = false;
-       }
+        *z_ucs_input = Z_UCS_NEWLINE;
+        running = false;
+      }
+      else if (Event.key.keysym.sym == SDLK_PAGEDOWN) {
+        result = EVENT_WAS_CODE_PAGE_DOWN;
+        running = false;
+      }
+      else if (Event.key.keysym.sym == SDLK_PAGEUP) {
+        result = EVENT_WAS_CODE_PAGE_UP;
+        running = false;
+      }
     }
     else if (Event.type == SDL_WINDOWEVENT) {
       TRACE_LOG("Found SDL_WINDOWEVENT: %d.\n", Event.window.event);
