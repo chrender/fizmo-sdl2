@@ -94,6 +94,7 @@ static z_colour screen_default_foreground_color = Z_COLOUR_BLACK;
 static z_colour screen_default_background_color = Z_COLOUR_WHITE;
 static int sdl2_interface_screen_height_in_pixels = 800;
 static int sdl2_interface_screen_width_in_pixels = 600;
+static double sdl2_device_to_pixel_ratio = 1;
 //static const int sdl_color_depth = 32;
 //static const int sdl_video_flags = SDL_SWSURFACE | SDL_ANYFORMAT
 //| SDL_DOUBLEBUF | SDL_RESIZABLE;
@@ -722,6 +723,10 @@ static int get_screen_height_in_pixels() {
   return sdl2_interface_screen_height_in_pixels;
 }
 
+
+static double get_device_to_pixel_ratio() {
+  return sdl2_device_to_pixel_ratio;
+}
 
 /*
 static void sdl2_if_catch_signal(int sig_num) {
@@ -1376,6 +1381,7 @@ static struct z_screen_pixel_interface sdl2_interface = {
   &output_interface_info,
   &get_screen_width_in_pixels,
   &get_screen_height_in_pixels,
+  &get_device_to_pixel_ratio,
   &update_screen,
   &redraw_screen_from_scratch,
   &copy_area,
@@ -1431,7 +1437,8 @@ int main(int argc, char *argv[]) {
   char *input_file;
   z_file *story_stream = NULL, *blorb_stream = NULL;
   z_colour new_color;
-  int int_value;
+  int int_value, width, height;
+  double hidpi_x_scale, hidpi_y_scale;
   z_file *savegame_to_restore= NULL;
   //Display *display;
   //Window window;
@@ -1712,13 +1719,28 @@ int main(int argc, char *argv[]) {
           SDL_WINDOWPOS_UNDEFINED,
           sdl2_interface_screen_width_in_pixels,
           sdl2_interface_screen_height_in_pixels,
-          SDL_WINDOW_RESIZABLE)) == NULL) {
+          SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI)) == NULL) {
         i18n_translate_and_exit(
             fizmo_sdl2_module_name,
             i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
             -1,
             "SDL_SetVideoMode");
       }
+
+      SDL_GL_GetDrawableSize(sdl_window, &width, &height);
+      hidpi_x_scale = width / sdl2_interface_screen_width_in_pixels;
+      hidpi_y_scale = height / sdl2_interface_screen_height_in_pixels;
+
+      if (hidpi_x_scale == hidpi_y_scale) {
+        sdl2_device_to_pixel_ratio = hidpi_x_scale;
+        sdl2_interface_screen_width_in_pixels *= sdl2_device_to_pixel_ratio;
+        sdl2_interface_screen_height_in_pixels *= sdl2_device_to_pixel_ratio;
+      }
+
+      /*
+      printf("%d / %d : %lf / %lf\n",
+          width, height, hidpi_x_scale, hidpi_y_scale);
+      */
 
       if ((sdl_renderer = SDL_CreateRenderer(sdl_window, -1, 0)) == NULL) {
         i18n_translate_and_exit(
