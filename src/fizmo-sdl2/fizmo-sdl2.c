@@ -926,6 +926,9 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
             sdl2_interface_screen_width_in_pixels,
             sdl2_interface_screen_height_in_pixels);
 
+        sdl2_interface_screen_width_in_pixels *= sdl2_device_to_pixel_ratio;
+        sdl2_interface_screen_height_in_pixels *= sdl2_device_to_pixel_ratio;
+
         // memleak, destroy old?
         if ((Surf_Display = SDL_CreateRGBSurface(
                 0,
