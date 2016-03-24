@@ -1705,6 +1705,8 @@ int main(int argc, char *argv[]) {
             -1,
             "SDL_Init");
 
+      SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1");
+
       atexit(SDL_Quit);
       //SDL_EnableUNICODE(1);
       //SDL_EnableKeyRepeat(200, 20);
