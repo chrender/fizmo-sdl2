@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <changelog>
-  <change version="0.1.0">
-    <logentry>Very first prototype.</logentry>
+  <change version="0.7.0">
+    <logentry>First implementation.</logentry>
   </change>
 </changelog>
 

@@ -1,8 +1,8 @@
 
 
 
-   **Version 0.1.0**
+   **Version 0.7.0**
 
- - Very first prototype.
+ - First implementation.
 
 

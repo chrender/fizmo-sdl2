@@ -3,7 +3,7 @@
  *
  * This file is part of fizmo.
  *
- * Copyright (c) 2011-2015 Christoph Ender.
+ * Copyright (c) 2011-2016 Christoph Ender.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,7 +67,7 @@
 
 #include "../locales/fizmo_sdl2_locales.h"
 
-#define FIZMO_SDL_VERSION "0.1.0"
+#define FIZMO_SDL_VERSION "0.7.0"
 
 
 #ifdef ENABLE_X11_IMAGES

@@ -3,7 +3,7 @@
 #
 # This file is part of fizmo.
 #
-# Copyright (c) 2009-2015 Christoph Ender.
+# Copyright (c) 2009-2016 Christoph Ender.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -43,7 +43,7 @@ AC_ARG_ENABLE([tracing],
 
 AC_INIT(
  [fizmo-sdl2],
- [0.1.0],
+ [0.7.0],
  fizmo@spellbreaker.org,
  fizmo-sdl2)
 
@@ -53,7 +53,7 @@ AC_PROG_CC
 AC_PROG_RANLIB
 
 PKG_CHECK_MODULES([libfizmo], [libfizmo >= 0.7.10])
-PKG_CHECK_MODULES([libpixelif], [libpixelif >= 0.1.0])
+PKG_CHECK_MODULES([libpixelif], [libpixelif >= 0.7.0])
 PKG_CHECK_MODULES([libsndifsdl2], [libsndifsdl2 >= 0.8.0])
 #PKG_CHECK_MODULES([libdrilbo], [libdrilbo >= 0.2.3])
 m4_include(config-libs.m4)
