@@ -298,13 +298,13 @@ static void print_startup_syntax() {
   streams_latin1_output("\n");
   i18n_translate(
       fizmo_sdl2_module_name,
-      i18n_sdl2_LIBFIZMO_VERSION_P0S,
-      FIZMO_VERSION);
+      i18n_sdl2_LIBPIXELINTERFACE_VERSION_P0S,
+      get_screen_pixel_interface_version());
   streams_latin1_output("\n");
   i18n_translate(
       fizmo_sdl2_module_name,
-      i18n_sdl2_LIBPIXELINTERFACE_VERSION_P0S,
-      get_screen_pixel_interface_version());
+      i18n_sdl2_LIBFIZMO_VERSION_P0S,
+      FIZMO_VERSION);
   streams_latin1_output("\n");
   if (active_sound_interface != NULL) {
     streams_latin1_output(active_sound_interface->get_interface_name());
@@ -421,6 +421,12 @@ static void print_startup_syntax() {
   i18n_translate(
       fizmo_sdl2_module_name,
       i18n_sdl2_SET_BACKGROUND_COLOR);
+  streams_latin1_output("\n");
+
+  streams_latin1_output( " -cc, --cursor-color: ");
+  i18n_translate(
+      fizmo_sdl2_module_name,
+      i18n_sdl2_SET_CURSOR_COLOR);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -nc, --dont-use-colors: ");
@@ -1465,6 +1471,14 @@ int main(int argc, char *argv[]) {
 
   fizmo_register_screen_pixel_interface(&sdl2_interface);
 
+  // Parsing must occur after "fizmo_register_screen_pixel_interface" so
+  // that fizmo knows where to forward "parse_config_parameter" parameters
+  // to.
+#ifndef DISABLE_CONFIGFILES
+  parse_fizmo_config_files();
+#endif // DISABLE_CONFIGFILES
+
+
   while (argi < argc) {
     if ((strcmp(argv[argi], "-l") == 0)
         || (strcmp(argv[argi], "--set-locale") == 0)) {
@@ -1578,6 +1592,22 @@ int main(int argc, char *argv[]) {
       }
 
       screen_default_foreground_color = new_color;
+      argi++;
+    }
+    else if (
+        (strcmp(argv[argi], "-cc") == 0)
+        || (strcmp(argv[argi], "--cursor-color") == 0) ) {
+      if (++argi == argc) {
+        print_startup_syntax();
+        exit(EXIT_FAILURE);
+      }
+
+      if ((new_color = colorname_to_infocomcode(argv[argi])) == -1) {
+        print_startup_syntax();
+        exit(EXIT_FAILURE);
+      }
+
+      set_configuration_value("cursor-color", argv[argi]);
       argi++;
     }
     else if (
@@ -1804,13 +1834,6 @@ int main(int argc, char *argv[]) {
 #ifdef SOUND_INTERFACE_STRUCT_NAME
       fizmo_register_sound_interface(&SOUND_INTERFACE_STRUCT_NAME);
 #endif // SOUND_INTERFACE_STRUCT_NAME
-
-      // Parsing must occur after "fizmo_register_screen_cell_interface" so
-      // that fizmo knows where to forward "parse_config_parameter" parameters
-      // to.
-#ifndef DISABLE_CONFIGFILES
-      parse_fizmo_config_files();
-#endif // DISABLE_CONFIGFILES
 
       fizmo_start(
           story_stream,

@@ -44,7 +44,7 @@ Fehler \{0d} trat vor Read auf: „\{1s}“.
 Unbekannter Fehlerfall.
 Funktionsaufruf von malloc(\{0d}) lieferte NULL, wahrscheinlich verursacht durch Speichermangel.
 fizmo-sdl2 version \{0s}.
-libcellinterface version \{0s}.
+libpixelinterface version \{0s}.
 Lokalisierungsdaten-Suchpfad
 Dateiname, von dem Kommandos gelesen werden.
 X11-Inline-Grafik aktivieren.
@@ -53,3 +53,4 @@ Worttrennung deaktivieren.
 Dateiname für Transcript festlegen.
 Name der Datei zum Speichern der Benutzereingaben.
 Konnte „\{0s}“ nicht finden oder öffnen.
+Cursorgarbe festlegen.

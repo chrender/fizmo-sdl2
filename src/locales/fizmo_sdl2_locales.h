@@ -88,6 +88,7 @@
 #define i18n_sdl2_SET_TRANSCRIPT_FILENAME 52
 #define i18n_sdl2_FILENAME_TO_RECORD_INPUT_TO 53
 #define i18n_sdl2_COULD_NOT_OPEN_OR_FIND_P0S 54
+#define i18n_sdl2_SET_CURSOR_COLOR 55
 
 extern z_ucs fizmo_sdl2_module_name[];
 

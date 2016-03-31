@@ -44,7 +44,7 @@ Error \{0d} occured before read: "\{1s}".
 Unknown error case.
 Function call malloc(\{0d}) returned null, probably out of memory.
 fizmo-sdl2 version \{0s}.
-libcellinterface version \{0s}.
+libpixelinterface version \{0s}.
 Locale search path
 Filename to read commands from.
 Enable X11 inline graphics.
@@ -53,3 +53,4 @@ Disable hyphenation.
 Set transcript filename.
 Filename to record input to.
 Could not open or find "\{0s}".
+Set cursor color.
