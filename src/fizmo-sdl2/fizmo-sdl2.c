@@ -887,6 +887,10 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
         result = EVENT_WAS_CODE_BACKSPACE;
         running = false;
       }
+      else if (Event.key.keysym.sym == SDLK_DELETE) {
+        result = EVENT_WAS_CODE_DELETE;
+        running = false;
+      }
       else if (Event.key.keysym.sym == SDLK_RETURN) {
         result = EVENT_WAS_INPUT;
         *z_ucs_input = Z_UCS_NEWLINE;
