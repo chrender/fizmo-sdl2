@@ -545,6 +545,19 @@ static void link_interface_to_story(struct z_story *story) {
               icon_pixels[y*128+x]
                 = (red << 24) | (green << 16) | (blue << 8);
             }
+            else if (window_icon_zimage->image_type
+                == DRILBO_IMAGE_TYPE_GRAYSCALE) {
+
+              if (pixel_left_shift > 0) {
+                red <<= pixel_left_shift;
+              }
+              else if (pixel_left_shift < 0) {
+                red >>= pixel_left_shift;
+              }
+
+              icon_pixels[y*128+x]
+                = (red << 24) | (red << 16) | (red << 8);
+            }
           }
         }
 
