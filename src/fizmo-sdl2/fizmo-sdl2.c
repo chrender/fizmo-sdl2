@@ -61,6 +61,8 @@
 #include <screen_interface/screen_pixel_interface.h>
 #include <pixel_interface/pixel_interface.h>
 
+#include <drilbo/drilbo.h>
+
 #ifdef SOUND_INTERFACE_INCLUDE_FILE
 #include SOUND_INTERFACE_INCLUDE_FILE
 #endif /* SOUND_INTERFACE_INCLUDE_FILE */
@@ -95,70 +97,10 @@ static z_colour screen_default_background_color = Z_COLOUR_WHITE;
 static int sdl2_interface_screen_height_in_pixels = 800;
 static int sdl2_interface_screen_width_in_pixels = 600;
 static double sdl2_device_to_pixel_ratio = 1;
-//static const int sdl_color_depth = 32;
-//static const int sdl_video_flags = SDL_SWSURFACE | SDL_ANYFORMAT
-//| SDL_DOUBLEBUF | SDL_RESIZABLE;
 static SDL_TimerID timeout_timer;
 static bool timeout_timer_exists;
 static SDL_sem *timeout_semaphore;
 static char output_char_buf[SDL_OUTPUT_CHAR_BUF_SIZE];
-/*
-static int sdl_argc;
-static char **sdl_argv;
-static bool dont_update_story_list_on_start = false;
-static bool directory_was_searched = false;
-static WORDWRAP *infowin_output_wordwrapper;
-static WINDOW *infowin;
-static z_ucs *infowin_more, *infowin_back;
-static int infowin_height, infowin_width;
-static int infowin_topindex;
-static int infowin_lines_skipped;
-static int infowin_skip_x;
-static bool infowin_full = false;
-static wchar_t wchar_t_buf[SDL_WCHAR_T_BUF_SIZE];
-static z_ucs z_ucs_t_buf[SDL_Z_UCS_BUF_SIZE];
-static bool sdl_interface_open = false;
-
-static int n_color_pairs_in_use;
-static int n_color_pairs_available;
-static bool color_initialized = false;
-// This array contains (n_color_pairs_in_use) elements. The first element
-// contains the number of the color pair the was selected last, the
-// second element the color pair used before that. The array is used in
-// case the Z-Code tries to use more color pairs than the terminal can
-// provide. In such a case, the color pair that has not been used for
-// a longer time than all others is recycled.
-static short *color_pair_usage;
-
-static attr_t sdl_no_attrs = 0;
-static wchar_t sdl_setcchar_init_string[2];
-static bool dont_allocate_new_colour_pair = false;
-
-// "max_nof_color_pairs"  will be equal to story->max_nof_color_pairs once
-// the interface is initialized. Up to then it will contain -1 or COLOR_PAIRS-1
-// if the story menu is in use.
-static int max_nof_color_pairs = -1;
-
-static bool timer_active = true;
-
-#ifdef ENABLE_X11_IMAGES
-static z_image *frontispiece = NULL;
-static bool enable_x11_graphics = true;
-static bool enable_x11_inline_graphics = false;
-static x11_image_window_id drilbo_window_id = -1;
-static int x11_signalling_pipe[2];
-unsigned int x11_read_buf[1];
-fd_set x11_in_fds;
-#endif // ENABLE_X11_IMAGES
-
-static char *config_option_names[] = {
-  "enable-xterm-title",
-  "disable-x11-graphics",
-  "display-x11-inline-image",
-  "dont-update-story-list",
-  NULL
-};
-*/
 
 static z_colour colorname_to_infocomcode(char *colorname) {
   if      (strcmp(colorname, "black") == 0)
@@ -541,6 +483,16 @@ static char **get_config_option_names() {
 
 
 static void link_interface_to_story(struct z_story *story) {
+  z_image *frontispiece;
+  int frontispiece_resource_number;
+  z_image *window_icon_zimage;
+  uint32_t *icon_pixels;
+  int x, y, pixel_left_shift;
+  uint8_t red, green, blue;
+  uint8_t *image_data;
+  SDL_Surface *icon_surface;
+
+
   SDL_FillRect(
       Surf_Display,
       &Surf_Display->clip_rect,
@@ -548,71 +500,78 @@ static void link_interface_to_story(struct z_story *story) {
 
   SDL_SetWindowTitle(sdl_window, story->title);
 
-  /*
-  int flags;
-  int frontispiece_resource_number;
-
-  initscr();
-  keypad(stdscr, TRUE);
-  cbreak();
-  noecho();
-
-  // Create a new signalling pipe. This pipe is used by a select call to
-  // detect an incoming time-signal for the input routine.
-  if (pipe(sdl_if_signalling_pipe) != 0)
-    i18n_translate_and_exit(
-        fizmo_sdl2_module_name,
-        i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
-        -0x2016,
-        "pipe",
-        errno,
-        strerror(errno));
-
-  // Get the current flags for the read-end of the pipe.
-  if ((flags = fcntl(sdl_if_signalling_pipe[0], F_GETFL, 0)) == -1)
-    i18n_translate_and_exit(
-        fizmo_sdl2_module_name,
-        i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
-        -0x2017,
-        "fcntl / F_GETFL",
-        errno,
-        strerror(errno));
-
-  // Add the nonblocking flag the read-end of the pipe, thus making incoming
-  // input "visible" at once without having to wait for a newline.
-  if ((fcntl(sdl_if_signalling_pipe[0], F_SETFL, flags|O_NONBLOCK)) == -1)
-    i18n_translate_and_exit(
-        fizmo_sdl2_module_name,
-        i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
-        -0x2018,
-        "fcntl / F_SETFL",
-        errno,
-        strerror(errno));
-
-  max_nof_color_pairs = story->max_nof_color_pairs;
-  color_initialized = false;
-
-  sdl2_interface_open = true;
-
-  if (
-      (active_z_story->title != NULL)
-      &&
-      (use_xterm_title == true)
-     )
-    printf("%c]0;%s%c", 033, active_z_story->title, 007);
-
-#ifdef ENABLE_X11_IMAGES
   frontispiece_resource_number
     = active_blorb_interface->get_frontispiece_resource_number(
         active_z_story->blorb_map);
 
-  if ( (frontispiece_resource_number >= 0) && (enable_x11_graphics != false) )
-  {
-    TRACE_LOG("frontispiece resnum: %d.\n", frontispiece_resource_number)
-    display_X11_image_window(frontispiece_resource_number);
+  if (frontispiece_resource_number >= 0) {
+    printf("#1\n");
+    TRACE_LOG("frontispiece resnum: %d.\n", frontispiece_resource_number);
+    if ((frontispiece = get_blorb_image(frontispiece_resource_number))!=NULL) {
+      if ( (frontispiece->image_type == DRILBO_IMAGE_TYPE_RGB)
+          || (frontispiece->image_type != DRILBO_IMAGE_TYPE_GRAYSCALE) ) {
+
+        pixel_left_shift = 8 - frontispiece->bits_per_sample;
+
+        window_icon_zimage = scale_zimage(
+            frontispiece,
+            128,
+            128);
+
+        icon_pixels = fizmo_malloc(sizeof(uint32_t) * 128 * 128);
+
+        image_data = window_icon_zimage->data;
+
+        for (y=0; y<128; y++) {
+          for (x=0; x<128; x++) {
+
+            red = *(image_data++);
+
+            if (window_icon_zimage->image_type == DRILBO_IMAGE_TYPE_RGB) {
+              green = *(image_data++);
+              blue = *(image_data++);
+
+              if (pixel_left_shift > 0) {
+                red <<= pixel_left_shift;
+                green <<= pixel_left_shift;
+                blue <<= pixel_left_shift;
+              }
+              else if (pixel_left_shift < 0) {
+                red >>= pixel_left_shift;
+                green >>= pixel_left_shift;
+                blue >>= pixel_left_shift;
+              }
+
+              icon_pixels[y*128+x]
+                = (red << 24) | (green << 16) | (blue << 8);
+            }
+          }
+        }
+
+        icon_surface = SDL_CreateRGBSurfaceFrom(
+            icon_pixels,
+            128,
+            128,
+            32,
+            sizeof(uint32_t) * 128,
+            0xff000000,
+            0x00ff0000,
+            0x0000ff00,
+            0x00000000);
+
+        printf("#2\n");
+
+        SDL_SetWindowIcon(sdl_window, icon_surface);
+
+        SDL_FreeSurface(icon_surface);
+        free_zimage(window_icon_zimage);
+        window_icon_zimage= NULL;
+      }
+
+      free_zimage(frontispiece);
+      frontispiece = NULL;
+    }
   }
-#endif // ENABLE_X11_IMAGES
-  */
 }
 
 
@@ -622,76 +581,7 @@ static void reset_interface() {
 
 static int sdl2_close_interface(z_ucs *UNUSED(error_message)) {
   return 0;
-/*
-  z_ucs *ptr;
-
-#ifdef ENABLE_X11_IMAGES
-  if (drilbo_window_id != -1)
-  {
-    close_image_window(drilbo_window_id);
-    drilbo_window_id = -1;
-  }
-  if (frontispiece != NULL)
-  {
-    free_zimage(frontispiece);
-    frontispiece = NULL;
-  }
-#endif // ENABLE_X11_IMAGES
-
-  TRACE_LOG("Closing signalling pipes.\n");
-
-  close(sdl_if_signalling_pipe[1]);
-  close(sdl_if_signalling_pipe[0]);
-
-  endwin();
-
-  sdl2_interface_open = false;
-
-  if (error_message != NULL)
-  {
-    ptr = error_message;
-    while (ptr != NULL)
-    {
-      ptr = z_ucs_string_to_wchar_t(
-          wchar_t_buf,
-          ptr,
-          SDL_WCHAR_T_BUF_SIZE);
-
-      sdl2_fputws(wchar_t_buf, stderr);
-    }
-  }
-
-  if (use_xterm_title == true)
-    printf("%c]0;%c", 033, 007);
-
-  return 0;
-  */
 }
-
-
-/*
-static attr_t sdl2_z_style_to_attr_t(int16_t style_data)
-{
-  attr_t result = A_NORMAL;
-
-  if ((style_data & Z_STYLE_REVERSE_VIDEO) != 0)
-  {
-    result |= A_REVERSE;
-  }
-
-  if ((style_data & Z_STYLE_BOLD) != 0)
-  {
-    result |= A_BOLD;
-  }
-
-  if ((style_data & Z_STYLE_ITALIC) != 0)
-  {
-    result |= A_UNDERLINE;
-  }
-
-  return result;
-}
-*/
 
 
 static void output_interface_info() {
@@ -710,16 +600,6 @@ static void output_interface_info() {
 }
 
 
-/*
-static void refresh_screen_size() {
-  getmaxyx(
-      stdscr,
-      sdl2_interface_screen_height,
-      sdl2_interface_screen_width);
-}
-*/
-
-
 static int get_screen_width_in_pixels() {
   return sdl2_interface_screen_width_in_pixels;
 }
@@ -733,42 +613,6 @@ static int get_screen_height_in_pixels() {
 static double get_device_to_pixel_ratio() {
   return sdl2_device_to_pixel_ratio;
 }
-
-/*
-static void sdl2_if_catch_signal(int sig_num) {
-  int bytes_written = 0;
-  int ret_val;
-  int sdl_if_write_buffer;
-
-  // Note:
-  // I think TRACE_LOGs in this function may cause a deadlock in case
-  // they're called while a fflush for the tracelog is already underway.
-
-  sdl_if_write_buffer = sig_num;
-
-  //TRACE_LOG("Caught signal %d.\n", sig_num);
-
-  while ((size_t)bytes_written < sizeof(int)) {
-    ret_val = write(
-        sdl_if_signalling_pipe[1],
-        &sdl_if_write_buffer,
-        sizeof(int));
-
-    if (ret_val == -1)
-      i18n_translate_and_exit(
-          fizmo_sdl2_module_name,
-          i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
-          -0x2023,
-          "write",
-          errno,
-          strerror(errno));
-
-    bytes_written += ret_val;
-  }
-
-  //TRACE_LOG("Catch finished.\n");
-}
-*/
 
 
 static Uint32 timeout_callback(Uint32 interval, void *UNUSED(param)) {
@@ -910,12 +754,6 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
       if (Event.window.event == SDL_WINDOWEVENT_RESIZED) {
         TRACE_LOG("Found SDL_WINDOWEVENT_RESIZED.\n");
 
-        /*
-           SDL_Log("Window %d resized to %dx%d",
-           event->window.windowID, event->window.data1,
-           event->window.data2);
-           */
-
         sdl2_interface_screen_width_in_pixels
           = Event.window.data1 < MINIMUM_X_WINDOW_SIZE
           ? MINIMUM_X_WINDOW_SIZE
@@ -925,12 +763,6 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
           = Event.window.data2 < MINIMUM_Y_WINDOW_SIZE
           ? MINIMUM_Y_WINDOW_SIZE
           : Event.window.data2;
-
-        /*
-        printf("resize: %d x %d.\n",
-            sdl2_interface_screen_width_in_pixels,
-            sdl2_interface_screen_height_in_pixels);
-        */
 
         SDL_SetWindowSize(sdl_window,
             sdl2_interface_screen_width_in_pixels,
@@ -969,12 +801,6 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
               "SDL_CreateTexture");
         }
 
-        /*
-        new_pixel_screen_size(
-            sdl2_interface_screen_height_in_pixels,
-            sdl2_interface_screen_width_in_pixels);
-        */
-
         result = EVENT_WAS_WINCH;
         running = false;
       }
@@ -1001,188 +827,15 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
   }
 
   TRACE_LOG("Returning from get_next_event.\n");
-  //printf("return\n");
 
   return result;
-
-  /*
-  int max_filedes_number_plus_1;
-  int select_retval;
-  fd_set input_selectors;
-  int input_return_code;
-  bool input_should_terminate = false;
-  int bytes_read;
-  wint_t input;
-  int read_retval;
-  int new_signal;
-  //int screen_height, screen_width;
-
-  FD_ZERO(&input_selectors);
-  FD_SET(STDIN_FILENO, &input_selectors);
-  FD_SET(sdl_if_signalling_pipe[0], &input_selectors);
-
-  max_filedes_number_plus_1
-    = (STDIN_FILENO < sdl_if_signalling_pipe[0]
-        ? sdl_if_signalling_pipe[0]
-        : STDIN_FILENO) + 1;
-
-  if (timeout_millis > 0) {
-    TRACE_LOG("input timeout: %d ms. (%d/%d)\n", timeout_millis,
-        timeout_millis - (timeout_millis % 1000), 
-        (timeout_millis % 1000) * 1000);
-    timerval.it_value.tv_sec = timeout_millis - (timeout_millis % 1000);
-    timerval.it_value.tv_usec = (timeout_millis % 1000) * 1000;
-    timer_active = true;
-    setitimer(ITIMER_REAL, &timerval, NULL);
-  }
-
-  while (input_should_terminate == false) {
-    TRACE_LOG("current errno: %d.\n", errno);
-    TRACE_LOG("setting up selectors.\n");
-
-    FD_ZERO(&input_selectors);
-    FD_SET(STDIN_FILENO, &input_selectors);
-    FD_SET(sdl_if_signalling_pipe[0], &input_selectors);
-
-    select_retval = select(
-        max_filedes_number_plus_1,
-        &input_selectors,
-        NULL,
-        NULL,
-        NULL);
-
-    if (select_retval > 0) {
-      TRACE_LOG("select_retval > 0.\n");
-      TRACE_LOG("current errno: %d.\n", errno);
-
-      // something has changed in one of out input pipes.
-      if (FD_ISSET(STDIN_FILENO, &input_selectors)) {
-        // some user input is waiting. we'll read until getch() returned
-        // err, meaning "no more input availiable" in the nonblocking mode.
-        input_return_code = get_wch(&input);
-        if (input_return_code == ERR) {
-        }
-        else if (input_return_code == KEY_CODE_YES) {
-          if (input == KEY_UP)
-            result = EVENT_WAS_CODE_CURSOR_UP;
-          else if (input == KEY_DOWN)
-            result = EVENT_WAS_CODE_CURSOR_DOWN;
-          else if (input == KEY_RIGHT)
-            result = EVENT_WAS_CODE_CURSOR_RIGHT;
-          else if (input == KEY_LEFT)
-            result = EVENT_WAS_CODE_CURSOR_LEFT;
-          else if (input == KEY_NPAGE)
-            result = EVENT_WAS_CODE_PAGE_DOWN;
-          else if (input == KEY_PPAGE)
-            result = EVENT_WAS_CODE_PAGE_UP;
-          else if (input == KEY_BACKSPACE)
-            result = EVENT_WAS_CODE_BACKSPACE;
-        }
-        else if (input_return_code == OK) {
-          if ( (input == 127) || (input == 8) )
-            result = EVENT_WAS_CODE_BACKSPACE;
-          else if (input == 1)
-            result = EVENT_WAS_CODE_CTRL_A;
-          else if (input == 5)
-            result = EVENT_WAS_CODE_CTRL_E;
-          else if (input == 27)
-            result = EVENT_WAS_CODE_ESC;
-          else {
-            result = EVENT_WAS_INPUT;
-            *z_ucs_input = (z_ucs)input;
-          }
-        }
-
-        input_should_terminate = true;
-      }
-      else if (FD_ISSET(sdl_if_signalling_pipe[0], &input_selectors)) {
-        TRACE_LOG("current errno: %d.\n", errno);
-        // the signal handler has written to our curses_if_signalling_pipe.
-        // ensure that errno is != 0 before reading from the pipe. this is
-        // due to the fact that even a successful read may set errno.
-
-        TRACE_LOG("pipe event.\n");
-
-        bytes_read = 0;
-
-        while (bytes_read != sizeof(int)) {
-          read_retval = read(
-              sdl_if_signalling_pipe[0],
-              &new_signal,
-              sizeof(int));
-
-          if (read_retval == -1) {
-            if (errno == EAGAIN) {
-              errno = 0;
-              continue;
-            }
-            else {
-              i18n_translate_and_exit(
-                  fizmo_sdl2_module_name,
-                  i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
-                  -0x2041,
-                  "read",
-                  errno,
-                  strerror(errno));
-            }
-          }
-          else {
-            bytes_read += read_retval;
-          }
-        }
-
-        TRACE_LOG("bytes read: %d,signal code: %d\n", bytes_read, new_signal);
-
-        if (new_signal == SIGALRM) {
-          if (timeout_millis > 0) {
-            TRACE_LOG("Timeout.\n");
-            result = EVENT_WAS_TIMEOUT;
-            input_should_terminate = true;
-          }
-        }
-        else if (new_signal == SIGWINCH) {
-          TRACE_LOG("interface got SIGWINCH.\n");
-          result = EVENT_WAS_WINCH;
-
-          endwin();
-          refresh();
-          //getmaxyx(stdscr, screen_height, screen_width);
-          refresh_screen_size();
-          //TRACE_LOG("New dimensions: %dx%d.\n", screen_width, screen_height);
-          //new_cell_screen_size(screen_height, screen_width);
-          input_should_terminate = true;
-        }
-        else {
-          i18n_translate_and_exit(
-              fizmo_sdl2_module_name,
-              i18n_sdl2_UNKNOWN_ERROR_CASE,
-              -0x2041);
-        }
-      }
-    }
-    else {
-      if (errno == EINTR)
-        errno = 0;
-      else {
-        TRACE_LOG("select returned <=0, current errno: %d.\n", errno);
-      }
-    }
-  }
-
-  sigaction(SIGWINCH, NULL, NULL);
-
-  TRACE_LOG("result %d.\n", result);
-
-  return result;
-  */
 }
 
 
 void update_screen() {
   TRACE_LOG("Doing update_screen().\n");
-  //SDL_UpdateRect(Surf_Display, 0, 0, 0, 0);
-  //SDL_Flip(Surf_Display);
-  SDL_UpdateTexture(sdlTexture, NULL, Surf_Display->pixels, Surf_Display->pitch);
+  SDL_UpdateTexture(
+      sdlTexture, NULL, Surf_Display->pixels, Surf_Display->pitch);
   SDL_RenderClear(sdl_renderer);
   SDL_RenderCopy(sdl_renderer, sdlTexture, NULL, NULL);
   SDL_RenderPresent(sdl_renderer);
@@ -1190,10 +843,6 @@ void update_screen() {
 
 
 void redraw_screen_from_scratch() {
-  /*
-  redrawwin(stdscr);
-  update_screen();
-  */
 }
 
 
@@ -1342,14 +991,6 @@ void fill_area(int startx, int starty, int xsize, int ysize,
 
 
 static void set_cursor_visibility(bool UNUSED(visible)) {
-  /*
-  if (sdl2_interface_open == true) {
-    if (visible == true)
-      curs_set(1);
-    else
-      curs_set(0);
-  }
-  */
 }
 
 
@@ -1406,43 +1047,6 @@ static struct z_screen_pixel_interface sdl2_interface = {
 };
 
 
-/*
-void catch_signal(int sig_num) {
-  int bytes_written = 0;
-  int ret_val;
-  int sdl_if_write_buffer;
-
-  // Note:
-  // Look like TRACE_LOGs in this function may cause a deadlock in case
-  // they're called while a fflush for the tracelog is already underway.
-
-  sdl_if_write_buffer = sig_num;
-
-  //TRACE_LOG("Caught signal %d.\n", sig_num);
-
-  while ((size_t)bytes_written < sizeof(int)) {
-    ret_val = write(
-        sdl_if_signalling_pipe[1],
-        &sdl_if_write_buffer,
-        sizeof(int));
-
-    if (ret_val == -1)
-      i18n_translate_and_exit(
-          fizmo_sdl2_module_name,
-          i18n_sdl2_FUNCTION_CALL_P0S_RETURNED_ERROR_P1D_P2S,
-          -0x2023,
-          "write",
-          errno,
-          strerror(errno));
-
-    bytes_written += ret_val;
-  }
-
-  //TRACE_LOG("Catch finished.\n");
-}
-*/
-
-
 int main(int argc, char *argv[]) {
   int argi = 1;
   int story_filename_parameter_number = -1;
@@ -1453,21 +1057,6 @@ int main(int argc, char *argv[]) {
   int int_value, width, height;
   double hidpi_x_scale, hidpi_y_scale;
   z_file *savegame_to_restore= NULL;
-  //Display *display;
-  //Window window;
-
-  /*
-  int flags;
-  char *cwd = NULL;
-  char *absdirname = NULL;
-#ifndef DISABLE_FILELIST
-  char *story_to_load_filename, *assumed_filename;
-  struct z_story_list *story_list;
-  size_t absdirname_len = 0;
-  int i;
-#endif // DISABLE_FILELIST
-  */
-  
 
 #ifdef ENABLE_TRACING
   turn_on_trace();
@@ -1775,11 +1364,6 @@ int main(int argc, char *argv[]) {
         sdl2_interface_screen_width_in_pixels *= sdl2_device_to_pixel_ratio;
         sdl2_interface_screen_height_in_pixels *= sdl2_device_to_pixel_ratio;
       }
-
-      /*
-      printf("%d / %d : %lf / %lf\n",
-          width, height, hidpi_x_scale, hidpi_y_scale);
-      */
 
       if ((sdl_renderer = SDL_CreateRenderer(sdl_window, -1, 0)) == NULL) {
         i18n_translate_and_exit(
