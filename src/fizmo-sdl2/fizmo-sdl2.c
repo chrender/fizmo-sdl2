@@ -371,16 +371,10 @@ static void print_startup_syntax() {
       i18n_sdl2_SET_CURSOR_COLOR);
   streams_latin1_output("\n");
 
-  streams_latin1_output( " -nc, --dont-use-colors: ");
+  streams_latin1_output( " -fs, --font-size: ");
   i18n_translate(
       fizmo_sdl2_module_name,
-      i18n_sdl2_DONT_USE_COLORS);
-  streams_latin1_output("\n");
-
-  streams_latin1_output( " -ec, --enable-colors: ");
-  i18n_translate(
-      fizmo_sdl2_module_name,
-      i18n_sdl2_ENABLE_COLORS);
+      i18n_sdl2_SET_FONT_SIZE);
   streams_latin1_output("\n");
 
   streams_latin1_output( " -lm, --left-margin: " );
@@ -439,40 +433,11 @@ static void print_startup_syntax() {
 
 static int parse_config_parameter(char *UNUSED(key), char *UNUSED(value)) {
   return -2;
-
-  /*
-  if (strcmp(key, "dont-update-story-list") == 0) {
-    if (
-        (value == NULL)
-        ||
-        (*value == 0)
-        ||
-        (strcmp(value, config_true_value) == 0)
-       )
-      dont_update_story_list_on_start = true;
-    free(value);
-    return 0;
-  }
-  else {
-    return -2;
-  }
-  */
 }
 
 
 static char *get_config_value(char *UNUSED(key)) {
   return NULL;
-
-  /*
-  if (strcmp(key, "dont-update-story-list") == 0) {
-    return dont_update_story_list_on_start == true
-      ? config_true_value
-      : config_false_value;
-  }
-  else {
-    return NULL;
-  }
-  */
 }
 
 
@@ -1213,6 +1178,31 @@ int main(int argc, char *argv[]) {
       set_configuration_value("cursor-color", argv[argi]);
       argi++;
     }
+    else if ( (strcmp(argv[argi], "-fs") == 0)
+        || (strcmp(argv[argi], "--font-size") == 0) ) {
+      if (++argi == argc) {
+        print_startup_syntax();
+        exit(EXIT_FAILURE);
+      }
+
+      int_value = atoi(argv[argi]);
+
+      if (int_value < 4) {
+        i18n_translate(
+            fizmo_sdl2_module_name,
+            i18n_sdl2_INVALID_CONFIGURATION_VALUE_P0S_FOR_P1S,
+            argv[argi],
+            argv[argi - 1]);
+
+        streams_latin1_output("\n");
+
+        print_startup_syntax();
+        exit(EXIT_FAILURE);
+      }
+
+      set_configuration_value("font-size", argv[argi]);
+      argi += 1;
+    }
     else if (
         (strcmp(argv[argi], "-um") == 0)
         || (strcmp(argv[argi], "--umem") == 0) ) {
@@ -1223,18 +1213,6 @@ int main(int argc, char *argv[]) {
         (strcmp(argv[argi], "-dh") == 0)
         || (strcmp(argv[argi], "--disable-hyphenation") == 0) ) {
       set_configuration_value("disable-hyphenation", "true");
-      argi ++;
-    }
-    else if (
-        (strcmp(argv[argi], "-nc") == 0)
-        || (strcmp(argv[argi], "--dont-use-colors: ") == 0) ) {
-      set_configuration_value("disable-color", "true");
-      argi ++;
-    }
-    else if (
-        (strcmp(argv[argi], "-ec") == 0)
-        || (strcmp(argv[argi], "--enable-colors: ") == 0) ) {
-      set_configuration_value("enable-color", "true");
       argi ++;
     }
     else if ( (strcmp(argv[argi], "-ds") == 0)

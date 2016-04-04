@@ -35,7 +35,7 @@
 localedir = $(datarootdir)/fizmo/locales
 
 SUBDIRS = src/fizmo-sdl2
-#man6_MANS = src/man/fizmo-sdl2.6
+man6_MANS = src/man/fizmo-sdl2.6
 
 install-data-local::
 	mkdir -p $(DESTDIR)$(localedir)

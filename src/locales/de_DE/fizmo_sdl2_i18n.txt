@@ -54,3 +54,4 @@ Dateiname für Transcript festlegen.
 Name der Datei zum Speichern der Benutzereingaben.
 Konnte „\{0s}“ nicht finden oder öffnen.
 Cursorgarbe festlegen.
+Schriftgröße festlegen.
