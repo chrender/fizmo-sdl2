@@ -1,0 +1,367 @@
+.TH FIZMO-SDL2 6 "April 4, 2016" "0.7.0"
+.SH NAME
+fizmo-sdl2
+- SDL2-based implementation of the fizmo Z-Machine Interpreter.
+
+.SH SYNOPSIS
+.B fizmo-sdl2
+[ options ] [
+.I storyfile [ blorbfile ]
+]
+
+.SH DESCRIPTION
+.B fizmo-sdl2
+is a frontend for the fizmo Z-Machine interpreter\[em]\[lq]\fBF\fPimzo
+\fBi\fPnterprets \fBZ\fP-\fBm\fPachine \fBo\fPpcodes\[rq]\[em]based on the
+SDL2 multimedia library. It runs most of the interactive fiction games aka
+text adventures written by Infocom or other games which are based on the
+Z-Machine. Currently all versions except version 6 are supported. It also
+provides sound support\[em]see subsection \[lq]Sound Support\[rq]\[em]and
+implements basic Blorb support.
+.SS Starting a new game by providing a filename
+Just give the filename of the story file at the end of the command line.
+
+.SS Sound Support
+fizmo-sdl2 supports sound playback. Sound files are either read from a blorb
+file, or, old-infocom-style-wise, from separate *.snd files which have to be
+stored in the same directory as the game file. At the moment, only AIFF sounds
+can be read from a blorb file.
+When the game requests a sound, fizmo uses the sound from the current blorb
+file. If no blorb file is given or the sound cannot be found in it, fizmo
+tries to locate a file with the format \[lq]GAMFIL00.SND\[rq] where GAMEFIL
+symbolizes the game filename shortened to a maximum of six characters, the
+sound number\[em]eventually padded by a leading zero so it has always a
+length of two characters\[em]and a \[lq].SND\[rq] suffix. Both upper-
+and lowercase filenames are attempted. That means you can directly use the
+sounds from the IF-archive at \fC\[lq]/if-archive/infocom/media/sound\[rq]\fP.
+
+.SH OPTIONS
+.TP
+.B -h, --help
+Show help message and exit.
+.TP
+.B -b, --background-color \fI<color-name>\fP
+Set background color. Valid color names are \fIblack\fP, \fIred\fP,
+\fIgreen\fP, \fIyellow\fP, \fIblue\fP, \fImagenta\fP, \fIcyan\fP and
+\fIwhite\fP.
+.TP
+.B -cc, --cusor-color \fI<color-name>\fP
+Set the cursor . Valid color names are \fIblack\fP, \fIred\fP,
+\fIgreen\fP, \fIyellow\fP, \fIblue\fP, \fImagenta\fP, \fIcyan\fP and
+\fIwhite\fP.
+.TP
+.B -dh, --disable-hyphenation
+Disable word hyphenation. Useful for languages other than the supported
+ones.
+.TP
+.B -ds, --disable-sound
+Disable sound alltogether. May be useful when playing on remote machines.
+.TP
+.B -f, --foreground-color \fI<color-name>\fP
+Set foreground color. Valid color names are \fIblack\fP, \fIred\fP,
+\fIgreen\fP, \fIyellow\fP, \fIblue\fP, \fImagenta\fP, \fIcyan\fP and
+\fIwhite\fP.
+.TP
+.B -fi, --start-file-input
+Start game with input from file.
+.TP
+.B -if, --input-file
+Filename to read commands from.
+.TP
+.B -l, --set-locale \fI<locale-code>\fP
+Set locale name for interpreter messages. Currently valid locale codes are
+\fIen_US\fP, \fIde_DE\fP and \fIfr_FR\fP.
+.TP
+.B -lm, --left-margin \fI<width>\fP
+Set left margin width, requires a numeric argument.
+.TP
+.B -nx, --disable-x11-graphics
+Disable X11 graphics.
+.TP
+.B -pr, --predictable
+Start with random generator in predictable mode.
+.TP
+.B -ra, --random
+Start with random generator in standard random mode.
+.TP
+.B -rc, --record-commands
+Activate recording of commands as soon as the game starts.
+.TP
+.B -rf, --record-filename
+Filename to record input to.
+.TP
+.B -rm, --right-margin \fI<width>\fP
+Set right margin width, requires a numeric argument.
+.TP
+.B -s8, --force-8bit-sound
+Never use 16-bit resolution, always convert to 8bit (some systems may not
+be capable of 16-bit sound output).
+.TP
+.B -st, --start-transcript
+Start game with scripting already enabled.
+.TP
+.B -sy, --sync-transcript
+When a transcript is active, write data directly into the file as soon
+as possible.
+.TP
+.B -t, --set-tandy-flag
+Sets the tandy flag, which emulates a game sold by the Tandy Corporation
+and slightly alters the game behaviour. See
+\fChttp://www.ifarchive.org/if-archive/infocom/info/tandy_bits.html\fP
+for detailed information on what the tandy flag does.
+.TP
+.B -tf, --transcript-filename
+Set transcript filename for the current session.
+.TP
+.B -um, --umem
+Use UMem instead of CMem for saving.
+.TP
+.B -mu, --maximum-undo-steps
+Set number of maximum undo steps.
+.TP
+
+.SH IN-GAME COMMANDS
+.TP
+.B /help
+Displays the list of available in-game commands.
+.TP
+.B /info
+Displays general version about the interpreter and its status, such as the
+version number, story release and serial number, stack, memory and random
+generator status.
+.TP
+.B /config
+Displays current configuration values.
+.TP
+.B /predictable
+Switches the random generator from \[lq]random\[rq] in \[lq]predictable\[rq]
+state and vice-versa.
+.TP
+.B /recstart
+Records all user input in a command-file.
+.TP
+.B /recstop
+Stop recording user input.
+.TP
+.B /fileinput
+Start reading commands from a file.
+
+.SH ENVIRONMENT
+.TP
+\fC ZCODE_PATH
+Default list of path names\[em]separated by colons\[em]to search for Z-Machine
+games.
+.TP
+\fC INFOCOM_PATH
+Alternate list of pathnames which is used when \fCZCODE_PATH\fP is not set.
+.TP
+\fC ZCODE_ROOT_PATH
+List of colon-separated path names which are recursively searched for
+Z-Machine games.
+
+.SH FILES
+.SS List of files
+.TP
+\fC$HOME/.config/fizmo/config\fP
+May contain user configuration parameters. In case \fC$XDG_CONFIG_HOME\fP is
+defined and contains an absolute path, \fC$XDG_CONFIG_HOME/fizmo/config\fP is
+used, in case of a relative path \fC$HOME/$XDG_CONFIG_HOME/fizmo/confg\fP is
+read.
+.TP
+\fC($XDG_CONFIG_DIRS)/fizmo/config\fP
+$XDG_CONFIG_DIRS may contain a colon separated list of config directories to
+search. In case $XDG_CONFIG_DIRS is not set or empty \fC/etc/xdg\fP is
+used instead. Every directory is searched for a subdirectory named \fCfizmo\fP
+containing a file \fCconfig\fP, which will be searched for configuration
+parameters.
+.TP
+\fC/etc/fizmo.conf\fP
+Global configuration parameters.
+
+.SS Option names for config files
+The following section lists the config-file's equivalents for the command
+lines options. For a detailed description of these options, see the
+\[lq]Options\[rq] section. Options have to start at the beginning of the
+line without any leading whitespace. Comments start with a '#' at the
+beginning of the line.
+
+background-color = <color-name>
+.br
+foreground-color = <color-name>
+.br
+transcript-filename = <filename>
+.br
+command-filename = <filename>
+.br
+i18n-search-path = <colon-separated-directory-names>
+.br
+locale = <language-code>
+.br
+savegame-path = <directory-name>
+.br
+random-mode = <random or predictable>
+.br
+save-text-history-paragraphs = <number of paragraphs to store in savegames>
+.br
+z-code-path = <colon-separated-directory-names>
+.br
+z-code-root-path = <colon-separated-directory-names>
+.br
+disable-sound = <no value or \[lq]true\[rq] means yes, otherwise no>
+.br
+quetzal-umem = <no value or \[lq]true\[rq] means yes, otherwise no>
+.br
+set-tandy-flag = <no value or \[lq]true\[rq] means yes, otherwise no>
+.br
+start-command-recording-when-story-starts = <no value or \[lq]true\[rq] means
+yes, otherwise no>
+.br
+start-file-input-when-story-starts = <no value or \[lq]true\[rq] means yes,
+otherwise no>
+.br
+start-script-when-story-starts = <no value or \[lq]true\[rq] means yes,
+otherwise no>
+.br
+disable-stream-2-hyphenation = <no value or \[lq]true\[rq] means yes, otherwise no>
+.br
+disable-stream-2-wrap = <no value or \[lq]true\[rq] means yes, otherwise no>
+.br
+stream-2-line-width = <line-width>
+.br
+stream-2-left-margin = <margin-size>
+.br
+sync-transcript = <no value or \[lq]true\[rq] means yes, otherwise no>
+.br
+left-margin = <number-of-columns>
+.br
+right-margin = <number-of-columns>
+.br
+disable-hyphenation = <no value or \[lq]true\[rq] means yes, otherwise no>
+.br
+force-8bit-sound = <any value means yes, empty no>
+.br
+enable-xterm-title = <no value or \[lq]true\[rq] means yes, otherwise no>
+.br
+max-undo-steps = <maximum number of stored undo steps as numerical value>
+.br
+
+.SH MISCELLANEOUS
+.SS Scrolling back
+You can use the \fCPageUp\fP and \fCPageDown\fP keys (some terminals may
+require holding down shift) anytime to review text which was scrolled above
+the current window border.
+.SS Refreshing the screen
+\fCCTRL-L\fP will refresh the current display.
+.SS Redrawing the screen
+\fCCTRL-R\fP will redraw the current display. Contrary to CTRL-L, which
+refreshes the screen based on the current layout, CTRL-R will reconstruct the
+latest output based on the output history. This will help to display output
+which is hidden in case a game clears the screen, writes some text into the
+top line and then turns on the score line which then overlays the topmost line.
+.SS Resizing the screen
+In general, resizing the screen works best for game versions 3 and before,
+which is unfortunate since this encompasses only a part of the old Infocom
+games and none of the modern ones. For all others\[em]including
+Seastalker\[em]the upper window (which means mostly the status bar) cannot
+be resized and will remain fixed.
+.SS Undocumented Infocom commands
+Here is a list of commands that some of Infocom's games seem to support,
+although I never saw them menitioned in a manual or reference card.
+.TP
+\fC$verify, $ve, $ver\fP
+Verifies if the game file is correct (essentially executes the
+\[lq]verify\[rq] opcode). \[lq]$ve\[rq] works in almost all original Infocom
+games, \[lq]$ver\[rq] works in AMFV, Beyond Zork, Bureaucracy, Nord
+and Bert, Sherlock, Trinity and Zork Zero.
+.TP
+\fC$refre\fP
+Refreshes the screen. Works in AMFV, Arthur, Bureaucracy, Nord and Bert,
+Sherlock, Shogun, Trinity and Zork Zero.
+.TP
+\fC$id\fP
+The \[lq]$id\[rq] command gives information about the interpreter. Works in
+Border Zone, Bureaucracy and Trinity.
+.TP
+\fC$credi\fP
+Shows a credit screen in Trinity and Beyond Zork.
+.TP
+\fC#comm, #command\fP
+This will read your input from a file. Works in AMFV, Ballyhoo,
+Bureaucracy, Enchanter, Hollywood Hjinx, Leather Goddesses, Lurking Horror,
+Plundered Hearts, Shogun, Sorcerer, Spellbreaker, Stationfall, Trinity
+and Zork Zero.
+.TP
+\fC#rand <int>\fP
+Seeds the random generator with the given value. May be used in AMFV,
+Ballyhoo, Border Zone, Bureaucracy, Enchanter, Hollywood Hijinx,
+Leather Goddesses, Lurking Horror, Plundered Hearts, Shogun, Sorcerer,
+Spellbreaker, Stationfall and Zork Zero.
+.TP
+\fC#reco, #record\fP
+This will record your commands into a file. Works in AMFV, Ballyhoo,
+Bureaucracy, Enchanter, Hollywood Hjinx, Leather Goddesses, Lurking Horror,
+Plundered Hearts, Shogun, Sorcerer, Spellbreaker, Stationfall and Zork Zero.
+.TP
+\fC#unre, #unrecord\fP
+Stops recording commands into a file. Used in AMFV, Ballyhoo, Bureaucracy,
+Enchanter, Hollywood Hijinx, Leather Goddesses, Lurking Horror, Plundered
+Hearts, Shogun, Sorcerer, Spellbreaker, Stationfall and Zork Zero.
+
+.SH CREDITS
+.SS ITF \[em] The InfoTaskForce
+All the people who drew up the Z-Machine Specification, in alphabetical order:
+Chris Tham,
+David Beazley,
+George Janczuk,
+Graham Nelson,
+Mark Howell,
+Matthias Pfaller,
+Mike Threepoint,
+Paul David Doherty,
+Peter Lisle,
+Russell Hoare
+and
+Stefan Jokisch.
+See \fChttp://en.wikipedia.org/wiki/InfoTaskForce\fP for more information.
+.SS The Frotz authors
+When I got stuck I peeked into the frotz source. Thanks to
+Stefan Jokisch,
+Galen Hazelwood
+and
+David Griffith.
+.SS Mark Howell
+For the pix2gif code which is used in libdrilbo to parse the infocom .mg1
+image files.
+.SS People helping with bug fixes, extensions, packaging, translations and more
+in alphabetical order:
+Andrew Plotkin,
+B. Watson,
+David Batchelder,
+David Leverton,
+Eric Forgeot,
+irb,
+Lewis Gentry,
+Michael Dunlap,
+Mikko Torvinen,
+Nikos Chantziaras,
+Patrick Matth\(:ai,
+Samuel Verschelde, 
+Zachary Kline
+and the people at MacPorts.
+
+
+.SH SEE ALSO
+.BR fizmo-ncursesw(6),
+.BR fizmo-console(6),
+.BR frotz(6),
+.BR xzip(6),
+.BR jzip(6),
+.BR inform(1)
+
+.SH AUTHOR
+Fizmo was written in 2005\[en]2016 by Christoph Ender.
+
+.SH BUGS
+Fizmo is in beta stage and will probably still have some bugs.
+If you stumble upon one, please send an e-mail to fizmo@spellbreaker.org.
+
