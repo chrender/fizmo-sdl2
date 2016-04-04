@@ -505,7 +505,6 @@ static void link_interface_to_story(struct z_story *story) {
         active_z_story->blorb_map);
 
   if (frontispiece_resource_number >= 0) {
-    printf("#1\n");
     TRACE_LOG("frontispiece resnum: %d.\n", frontispiece_resource_number);
     if ((frontispiece = get_blorb_image(frontispiece_resource_number))!=NULL) {
       if ( (frontispiece->image_type == DRILBO_IMAGE_TYPE_RGB)
@@ -571,8 +570,6 @@ static void link_interface_to_story(struct z_story *story) {
             0x00ff0000,
             0x0000ff00,
             0x00000000);
-
-        printf("#2\n");
 
         SDL_SetWindowIcon(sdl_window, icon_surface);
 
