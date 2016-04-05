@@ -419,6 +419,18 @@ static void print_startup_syntax() {
       i18n_sdl2_SYNC_TRANSCRIPT);
   streams_latin1_output("\n");
 
+  streams_latin1_output( " -ww, --window-width: ");
+  i18n_translate(
+      fizmo_sdl2_module_name,
+      i18n_sdl2_SET_WINDOW_WIDTH);
+  streams_latin1_output("\n");
+
+  streams_latin1_output( " -wh, --window-height: ");
+  i18n_translate(
+      fizmo_sdl2_module_name,
+      i18n_sdl2_SET_WINDOW_HEIGHT);
+  streams_latin1_output("\n");
+
   streams_latin1_output( " -h,  --help: ");
   i18n_translate(
       fizmo_sdl2_module_name,
@@ -1201,6 +1213,34 @@ int main(int argc, char *argv[]) {
       }
 
       set_configuration_value("font-size", argv[argi]);
+      argi += 1;
+    }
+    else if ( (strcmp(argv[argi], "-ww") == 0)
+        || (strcmp(argv[argi], "--window-width") == 0) ) {
+      if (++argi == argc) {
+        print_startup_syntax();
+        exit(EXIT_FAILURE);
+      }
+
+      int_value = atoi(argv[argi]);
+
+      if (int_value > MINIMUM_X_WINDOW_SIZE) {
+        sdl2_interface_screen_width_in_pixels = int_value;
+      }
+      argi += 1;
+    }
+    else if ( (strcmp(argv[argi], "-wh") == 0)
+        || (strcmp(argv[argi], "--window-height") == 0) ) {
+      if (++argi == argc) {
+        print_startup_syntax();
+        exit(EXIT_FAILURE);
+      }
+
+      int_value = atoi(argv[argi]);
+
+      if (int_value > MINIMUM_Y_WINDOW_SIZE) {
+        sdl2_interface_screen_height_in_pixels = int_value;
+      }
       argi += 1;
     }
     else if (

@@ -90,6 +90,8 @@
 #define i18n_sdl2_COULD_NOT_OPEN_OR_FIND_P0S 54
 #define i18n_sdl2_SET_CURSOR_COLOR 55
 #define i18n_sdl2_SET_FONT_SIZE 56
+#define i18n_sdl2_SET_WINDOW_WIDTH 57
+#define i18n_sdl2_SET_WINDOW_HEIGHT 58
 
 extern z_ucs fizmo_sdl2_module_name[];
 

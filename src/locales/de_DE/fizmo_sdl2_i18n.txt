@@ -55,3 +55,5 @@ Name der Datei zum Speichern der Benutzereingaben.
 Konnte „\{0s}“ nicht finden oder öffnen.
 Cursorgarbe festlegen.
 Schriftgröße festlegen.
+Fensterbreite festlegen.
+Fensterhöhe definieren.
