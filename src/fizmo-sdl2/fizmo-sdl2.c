@@ -738,7 +738,10 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
     }
     else if (Event.type == SDL_WINDOWEVENT) {
       TRACE_LOG("Found SDL_WINDOWEVENT: %d.\n", Event.window.event);
-      if (Event.window.event == SDL_WINDOWEVENT_RESIZED) {
+      if (Event.window.event == SDL_WINDOWEVENT_EXPOSED) {
+        update_screen();
+      }
+      else if (Event.window.event == SDL_WINDOWEVENT_RESIZED) {
         TRACE_LOG("Found SDL_WINDOWEVENT_RESIZED.\n");
 
         sdl2_interface_screen_width_in_pixels
