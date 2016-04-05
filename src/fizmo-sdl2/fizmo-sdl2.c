@@ -629,6 +629,16 @@ static Uint32 timeout_callback(Uint32 interval, void *UNUSED(param)) {
 }
 
 
+void update_screen() {
+  TRACE_LOG("Doing update_screen().\n");
+  SDL_UpdateTexture(
+      sdlTexture, NULL, Surf_Display->pixels, Surf_Display->pitch);
+  //SDL_RenderClear(sdl_renderer);
+  SDL_RenderCopy(sdl_renderer, sdlTexture, NULL, NULL);
+  SDL_RenderPresent(sdl_renderer);
+}
+
+
 static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
     bool poll_only) {
   bool running = true;
@@ -687,6 +697,11 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
         if (state[SDL_SCANCODE_L]) {
           TRACE_LOG("ctrl-l.\n");
           result = EVENT_WAS_CODE_CTRL_L;
+          running = false;
+        }
+        else if (state[SDL_SCANCODE_R]) {
+          TRACE_LOG("ctrl-r.\n");
+          result = EVENT_WAS_CODE_CTRL_R;
           running = false;
         }
         else if (state[SDL_SCANCODE_A]) {
@@ -819,16 +834,6 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
   TRACE_LOG("Returning from get_next_event.\n");
 
   return result;
-}
-
-
-void update_screen() {
-  TRACE_LOG("Doing update_screen().\n");
-  SDL_UpdateTexture(
-      sdlTexture, NULL, Surf_Display->pixels, Surf_Display->pitch);
-  SDL_RenderClear(sdl_renderer);
-  SDL_RenderCopy(sdl_renderer, sdlTexture, NULL, NULL);
-  SDL_RenderPresent(sdl_renderer);
 }
 
 
