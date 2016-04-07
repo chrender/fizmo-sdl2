@@ -633,7 +633,7 @@ void update_screen() {
   TRACE_LOG("Doing update_screen().\n");
   SDL_UpdateTexture(
       sdlTexture, NULL, Surf_Display->pixels, Surf_Display->pitch);
-  //SDL_RenderClear(sdl_renderer);
+  SDL_RenderClear(sdl_renderer);
   SDL_RenderCopy(sdl_renderer, sdlTexture, NULL, NULL);
   SDL_RenderPresent(sdl_renderer);
 }
