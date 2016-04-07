@@ -753,10 +753,12 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
     }
     else if (Event.type == SDL_WINDOWEVENT) {
       TRACE_LOG("Found SDL_WINDOWEVENT: %d.\n", Event.window.event);
+
       if (Event.window.event == SDL_WINDOWEVENT_EXPOSED) {
         update_screen();
       }
-      else if (Event.window.event == SDL_WINDOWEVENT_RESIZED) {
+
+      if (Event.window.event == SDL_WINDOWEVENT_RESIZED) {
         TRACE_LOG("Found SDL_WINDOWEVENT_RESIZED.\n");
 
         sdl2_interface_screen_width_in_pixels
@@ -777,6 +779,7 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
         sdl2_interface_screen_height_in_pixels *= sdl2_device_to_pixel_ratio;
 
         // memleak, destroy old?
+        SDL_FreeSurface(Surf_Display);
         if ((Surf_Display = SDL_CreateRGBSurface(
                 0,
                 sdl2_interface_screen_width_in_pixels,
@@ -794,6 +797,7 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
         }
 
         // memleak, destroy old?
+        SDL_DestroyTexture(sdlTexture);
         if ((sdlTexture = SDL_CreateTexture(sdl_renderer,
                 SDL_PIXELFORMAT_ARGB8888,
                 SDL_TEXTUREACCESS_STREAMING,
