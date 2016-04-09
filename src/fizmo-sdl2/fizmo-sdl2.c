@@ -109,40 +109,6 @@ static z_colour colorname_to_infocomcode(char *colorname) {
 }
 
 
-/*
-static Uint32 z_to_sdl_colour(z_colour z_colour_to_convert) {
-  if (z_colour_to_convert == Z_COLOUR_BLACK) {
-    return SDL_MapRGB(Surf_Display->format, 0, 0, 0);
-  }
-  else if (z_colour_to_convert == Z_COLOUR_RED) {
-    return SDL_MapRGB(Surf_Display->format, 255, 0, 0);
-  }
-  else if (z_colour_to_convert == Z_COLOUR_GREEN) {
-    return SDL_MapRGB(Surf_Display->format, 0, 255, 0);
-  }
-  else if (z_colour_to_convert == Z_COLOUR_YELLOW) {
-    return SDL_MapRGB(Surf_Display->format, 255, 255, 0);
-  }
-  else if (z_colour_to_convert == Z_COLOUR_BLUE) {
-    return SDL_MapRGB(Surf_Display->format, 0, 0, 255);
-  }
-  else if (z_colour_to_convert == Z_COLOUR_MAGENTA) {
-    return SDL_MapRGB(Surf_Display->format, 255, 0, 255);
-  }
-  else if (z_colour_to_convert == Z_COLOUR_CYAN) {
-    return SDL_MapRGB(Surf_Display->format, 0, 255, 255);
-  }
-  else if (z_colour_to_convert == Z_COLOUR_WHITE) {
-    return SDL_MapRGB(Surf_Display->format, 255, 255, 255);
-  }
-  else {
-    TRACE_LOG("Invalid color.");
-    exit(-2);
-  }
-}
-*/
-
-
 static void draw_rgb_pixel(int y, int x, uint8_t r, uint8_t g, uint8_t b) {
   Uint32 *bufp;
 
