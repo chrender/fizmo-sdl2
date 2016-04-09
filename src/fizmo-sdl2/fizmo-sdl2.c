@@ -40,10 +40,7 @@
 #include <strings.h>
 #include <signal.h>
 
-//#include <SDL.h>
 #include <SDL2/SDL.h>
-//#include "SDL_getenv.h"
-//#include <SDL_thread.h>
 
 #include <tools/i18n.h>
 #include <tools/tracelog.h>
@@ -71,21 +68,9 @@
 
 #define FIZMO_SDL_VERSION "0.7.0"
 
-
-#ifdef ENABLE_X11_IMAGES
-#include <drilbo/drilbo.h>
-#include <drilbo/drilbo-jpeg.h>
-#include <drilbo/drilbo-png.h>
-#include <drilbo/drilbo-x11.h>
-#endif //ENABLE_X11_IMAGES
-
 #define SDL_OUTPUT_CHAR_BUF_SIZE 80
 #define MINIMUM_X_WINDOW_SIZE 200
 #define MINIMUM_Y_WINDOW_SIZE 100
-/*
-#define SDL_WCHAR_T_BUF_SIZE 64
-#define SDL_Z_UCS_BUF_SIZE 32
-*/
 
 static char* interface_name = "sdl2";
 SDL_Window *sdl_window = NULL;
@@ -124,6 +109,7 @@ static z_colour colorname_to_infocomcode(char *colorname) {
 }
 
 
+/*
 static Uint32 z_to_sdl_colour(z_colour z_colour_to_convert) {
   if (z_colour_to_convert == Z_COLOUR_BLACK) {
     return SDL_MapRGB(Surf_Display->format, 0, 0, 0);
@@ -154,10 +140,11 @@ static Uint32 z_to_sdl_colour(z_colour z_colour_to_convert) {
     exit(-2);
   }
 }
+*/
 
 
 static void draw_rgb_pixel(int y, int x, uint8_t r, uint8_t g, uint8_t b) {
-  Uint32 color = SDL_MapRGB(Surf_Display->format, r, g, b);
+  Uint32 *bufp;
 
   if ( SDL_MUSTLOCK(Surf_Display) ) {
     if ( SDL_LockSurface(Surf_Display) < 0 ) {
@@ -165,43 +152,9 @@ static void draw_rgb_pixel(int y, int x, uint8_t r, uint8_t g, uint8_t b) {
     }
   }
 
-  switch (Surf_Display->format->BytesPerPixel) {
-    case 1: { /* Assuming 8-bpp */
-              Uint8 *bufp;
-
-              bufp = (Uint8 *)Surf_Display->pixels + y*Surf_Display->pitch + x;
-              *bufp = color;
-            }
-            break;
-
-    case 2: { /* Probably 15-bpp or 16-bpp */
-              Uint16 *bufp;
-
-              bufp = (Uint16 *)Surf_Display->pixels
-                + y*Surf_Display->pitch/2 + x;
-              *bufp = color;
-            }
-            break;
-
-    case 3: { /* Slow 24-bpp mode, usually not used */
-              Uint8 *bufp;
-
-              bufp = (Uint8 *)Surf_Display->pixels + y*Surf_Display->pitch + x;
-              *(bufp+Surf_Display->format->Rshift/8) = r;
-              *(bufp+Surf_Display->format->Gshift/8) = g;
-              *(bufp+Surf_Display->format->Bshift/8) = b;
-            }
-            break;
-
-    case 4: { /* Probably 32-bpp */
-              Uint32 *bufp;
-
-              bufp = (Uint32 *)Surf_Display->pixels
-                + y*Surf_Display->pitch/4 + x;
-              *bufp = color;
-            }
-            break;
-  }
+  bufp = (Uint32 *)Surf_Display->pixels
+    + y*Surf_Display->pitch/4 + x;
+  *bufp = SDL_MapRGB(Surf_Display->format, r, g, b);
 
   if ( SDL_MUSTLOCK(Surf_Display) ) {
     SDL_UnlockSurface(Surf_Display);
@@ -437,8 +390,6 @@ static void print_startup_syntax() {
       i18n_sdl2_SHOW_HELP_MESSAGE_AND_EXIT);
   streams_latin1_output("\n");
 
-  //set_configuration_value("locale", fizmo_locale, "fizmo");
-
   streams_latin1_output("\n");
 }
 
@@ -454,7 +405,6 @@ static char *get_config_value(char *UNUSED(key)) {
 
 
 static char **get_config_option_names() {
-  //return config_option_names;
   return NULL;
 }
 
@@ -469,11 +419,6 @@ static void link_interface_to_story(struct z_story *story) {
   uint8_t *image_data;
   SDL_Surface *icon_surface;
 
-
-  SDL_FillRect(
-      Surf_Display,
-      &Surf_Display->clip_rect,
-      z_to_sdl_colour(screen_default_background_color));
 
   SDL_SetWindowTitle(sdl_window, story->title);
 
@@ -632,7 +577,10 @@ static Uint32 timeout_callback(Uint32 interval, void *UNUSED(param)) {
 void update_screen() {
   TRACE_LOG("Doing update_screen().\n");
   SDL_UpdateTexture(
-      sdlTexture, NULL, Surf_Display->pixels, Surf_Display->pitch);
+      sdlTexture,
+      NULL,
+      Surf_Display->pixels,
+      Surf_Display->pitch);
   SDL_RenderClear(sdl_renderer);
   SDL_RenderCopy(sdl_renderer, sdlTexture, NULL, NULL);
   SDL_RenderPresent(sdl_renderer);
@@ -754,9 +702,11 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
     else if (Event.type == SDL_WINDOWEVENT) {
       TRACE_LOG("Found SDL_WINDOWEVENT: %d.\n", Event.window.event);
 
+      /*
       if (Event.window.event == SDL_WINDOWEVENT_EXPOSED) {
         update_screen();
       }
+      */
 
       if (Event.window.event == SDL_WINDOWEVENT_RESIZED) {
         TRACE_LOG("Found SDL_WINDOWEVENT_RESIZED.\n");
@@ -778,7 +728,6 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
         sdl2_interface_screen_width_in_pixels *= sdl2_device_to_pixel_ratio;
         sdl2_interface_screen_height_in_pixels *= sdl2_device_to_pixel_ratio;
 
-        // memleak, destroy old?
         SDL_FreeSurface(Surf_Display);
         if ((Surf_Display = SDL_CreateRGBSurface(
                 0,
@@ -796,7 +745,6 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
               "SDL_GetWindowSurface");
         }
 
-        // memleak, destroy old?
         SDL_DestroyTexture(sdlTexture);
         if ((sdlTexture = SDL_CreateTexture(sdl_renderer,
                 SDL_PIXELFORMAT_ARGB8888,
@@ -857,64 +805,31 @@ void copy_area(int dsty, int dstx, int srcy, int srcx, int height, int width) {
     }
   }
 
-  switch (Surf_Display->format->BytesPerPixel) {
-    /*
-    case 1: { // Assuming 8-bpp 
-              Uint8 *srcp
-                = (Uint8 *)Surf_Display->pixels
-                + srcy*Surf_Display->pitch + srcx;
-              Uint8 *dstp
-                = (Uint8 *)Surf_Display->pixels
-                + dsty*Surf_Display->pitch + dstx;
-            }
-            break;
+  if (srcy > dsty) {
+    Uint32 *srcp = (Uint32 *)Surf_Display->pixels
+      + srcy*Surf_Display->pitch/4 + srcx;
+    Uint32 *dstp = (Uint32 *)Surf_Display->pixels
+      + dsty*Surf_Display->pitch/4 + dstx;
 
-    case 2: { // Probably 15-bpp or 16-bpp 
-              Uint16 *srcp = (Uint16 *)Surf_Display->pixels
-                + srcy*Surf_Display->pitch/2 + srcx;
-
-              Uint16 *dstp = (Uint16 *)Surf_Display->pixels
-                + dsty*Surf_Display->pitch/2 + dstx;
-            }
-            break;
-
-    case 3: { // Slow 24-bpp mode, usually not used
-              Uint8 *srcp = (Uint8 *)Surf_Display->pixels
-                + srcy*Surf_Display->pitch + srcx;
-              Uint8 *dstp = (Uint8 *)Surf_Display->pixels
-                + dsty*Surf_Display->pitch + dstx;
-            }
-            break;
-            */
-
-    case 4: { /* Probably 32-bpp */
-              if (srcy > dsty) {
-                Uint32 *srcp = (Uint32 *)Surf_Display->pixels
-                  + srcy*Surf_Display->pitch/4 + srcx;
-                Uint32 *dstp = (Uint32 *)Surf_Display->pixels
-                  + dsty*Surf_Display->pitch/4 + dstx;
-
-                for (y=0; y<height; y++) {
-                  memcpy(dstp, srcp, width*4);
-                  srcp += Surf_Display->pitch/4;
-                  dstp += Surf_Display->pitch/4;
-                }
-              }
-              else {
-                Uint32 *srcp = (Uint32 *)Surf_Display->pixels
-                  + (srcy+(height-1))*Surf_Display->pitch/4 + srcx;
-                Uint32 *dstp = (Uint32 *)Surf_Display->pixels
-                  + (dsty+(height-1))*Surf_Display->pitch/4 + dstx;
-
-                for (y=0; y<height; y++) {
-                  memcpy(dstp, srcp, width*4);
-                  srcp -= Surf_Display->pitch/4;
-                  dstp -= Surf_Display->pitch/4;
-                }
-              }
-            }
-            break;
+    for (y=0; y<height; y++) {
+      memcpy(dstp, srcp, width*4);
+      srcp += Surf_Display->pitch/4;
+      dstp += Surf_Display->pitch/4;
+    }
   }
+  else {
+    Uint32 *srcp = (Uint32 *)Surf_Display->pixels
+      + (srcy+(height-1))*Surf_Display->pitch/4 + srcx;
+    Uint32 *dstp = (Uint32 *)Surf_Display->pixels
+      + (dsty+(height-1))*Surf_Display->pitch/4 + dstx;
+
+    for (y=0; y<height; y++) {
+      memcpy(dstp, srcp, width*4);
+      srcp -= Surf_Display->pitch/4;
+      dstp -= Surf_Display->pitch/4;
+    }
+  }
+
   if ( SDL_MUSTLOCK(Surf_Display) ) {
     SDL_UnlockSurface(Surf_Display);
   }
@@ -922,7 +837,7 @@ void copy_area(int dsty, int dstx, int srcy, int srcx, int height, int width) {
 
 
 void fill_area(int startx, int starty, int xsize, int ysize,
-    z_rgb_colour colour) {
+    uint8_t r, uint8_t g, uint8_t b) {
   int y, x;
   Uint32 sdl_colour;
 
@@ -930,15 +845,11 @@ void fill_area(int startx, int starty, int xsize, int ysize,
   printf("Filling area %d,%d / %d,%d with %d\n",
       startx, starty, xsize, ysize, colour);
   */
-  TRACE_LOG("Filling area %d,%d / %d,%d with %d\n",
-      startx, starty, xsize, ysize, colour);
 
-  sdl_colour
-    = SDL_MapRGB(
-        Surf_Display->format,
-        red_from_z_rgb_colour(colour),
-        green_from_z_rgb_colour(colour),
-        blue_from_z_rgb_colour(colour));
+  TRACE_LOG("Filling area %d,%d / %d,%d with %d,%d,%d\n",
+      startx, starty, xsize, ysize, r, g, b);
+
+  sdl_colour= SDL_MapRGB(Surf_Display->format, r, g, b);
 
   if ( SDL_MUSTLOCK(Surf_Display) ) {
     if ( SDL_LockSurface(Surf_Display) < 0 ) {
@@ -946,41 +857,15 @@ void fill_area(int startx, int starty, int xsize, int ysize,
     }
   }
 
-  switch (Surf_Display->format->BytesPerPixel) {
-    /*
-    case 1: { // Assuming 8-bpp
-              Uint8 *bufp = (Uint8 *)Surf_Display->pixels
-                + starty*Surf_Display->pitch + startx;
-            }
-            break;
+  Uint32 *srcp;
 
-    case 2: { // Probably 15-bpp or 16-bpp
-              Uint16 *srcp = (Uint16 *)Surf_Display->pixels
-                + starty*Surf_Display->pitch/2 + startx;
-            }
-            break;
-
-    case 3: { // Slow 24-bpp mode, usually not used
-              Uint8 *srcp = (Uint8 *)Surf_Display->pixels
-                + starty*Surf_Display->pitch + startx;
-            }
-            break;
-            */
-
-    case 4: { /* Probably 32-bpp */
-              Uint32 *srcp;
-
-              for (y=0; y<ysize; y++) {
-                srcp = (Uint32 *)Surf_Display->pixels
-                  + (starty+y)*Surf_Display->pitch/4 + startx;
-                for (x=0; x<xsize; x++) {
-                  //*srcp = (Uint32)color;
-                  *srcp = sdl_colour;
-                  srcp++;
-                }
-              }
-            }
-            break;
+  for (y=0; y<ysize; y++) {
+    srcp = (Uint32 *)Surf_Display->pixels
+      + (starty+y)*Surf_Display->pitch/4 + startx;
+    for (x=0; x<xsize; x++) {
+      *srcp = sdl_colour;
+      srcp++;
+    }
   }
 
   if ( SDL_MUSTLOCK(Surf_Display) ) {
@@ -1442,22 +1327,6 @@ int main(int argc, char *argv[]) {
       }
 
       timeout_semaphore = SDL_CreateSemaphore(1);
-
-      /*
-         SDL_SysWMinfo info;
-         SDL_VERSION(&info.version);
-
-         if(!SDL_GetWMInfo(&info)) {
-         printf("SDL cant get from SDL\n");
-         }
-
-         if ( info.subsystem != SDL_SYSWM_X11 ) {
-         printf("SDL is not running on X11\n");
-         }
-
-         display = info.info.x11.display;
-         window = info.info.x11.window;
-         */
 
 #ifdef SOUND_INTERFACE_STRUCT_NAME
       fizmo_register_sound_interface(&SOUND_INTERFACE_STRUCT_NAME);
