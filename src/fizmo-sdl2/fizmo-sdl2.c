@@ -16,7 +16,7 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
  *    derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -27,7 +27,38 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *
+ *
+ * RE-WORK THIS PARAGRAPH *
+ * This implementation doesn't evaluate the SDL events as they come from
+ * SDL_PollEvent or SDL_WaitEvent. Instead, an extra thread is running which
+ * continously gets the events from SDL_PollEvent and pushes them into
+ * a separate "sdl_event_queue" which is managed by fizmo-sdl2 only. This
+ * serves three purposes: First, it apparently allows to capture more events.
+ * In case expose events are handeled as they come in, at least the linux
+ * SDL2-implementation gives less and much rarer resized-events, resulting in
+ * a very delayed display (up to multiple seconds) during resizing. Second,
+ * the Mac OS X SDL2-implementation only gives a single resized-event in
+ * case the user resizes the window, and that is when the mouse button is
+ * finally released. This results in a completely black window during resize.
+ * With a separate event queue and a different SDL2 event filter this problem
+ * can be worked around. In addition, it's easier to collect expose events,
+ * which can be coming in extremely fast, into a single expose event every
+ * 10ms, which is still more than fast enough for screen updates.
+ *
+ * GENREAL RULES:
+ * The main thread handles actual painting and events.
+ * The interpreter is running in a thread.
+ * Surf_Backup and sdlTexture may only be accessed after locking
+ *  "sdl_backup_surface_mutex".
+ * The interpreter thread can freely access Surf_Displays to plot new
+ *  pixels.
+ * On some draw event which is initiated by the interpreter thread this
+ *  one blocks/waits until the main thread has done the actual work. During
+ *  this time the main thread can freely access Surf_Display and Surf_Backup.
  */
+
 
 
 #include <locale.h>
@@ -73,58 +104,99 @@
 #define MINIMUM_Y_WINDOW_SIZE 100
 
 static char* interface_name = "sdl2";
-SDL_Window *sdl_window = NULL;
-SDL_Renderer *sdl_renderer = NULL;
-SDL_Surface* Surf_Display = NULL;
-SDL_Texture *sdlTexture = NULL;
+static SDL_Window *sdl_window = NULL;
+static SDL_Renderer *sdl_renderer = NULL;
+static SDL_Surface* Surf_Display = NULL;
+static SDL_Surface* Surf_Backup = NULL;
+static SDL_Texture *sdlTexture = NULL;
 static z_colour screen_default_foreground_color = Z_COLOUR_BLACK;
 static z_colour screen_default_background_color = Z_COLOUR_WHITE;
 static int sdl2_interface_screen_height_in_pixels = 800;
 static int sdl2_interface_screen_width_in_pixels = 600;
 static double sdl2_device_to_pixel_ratio = 1;
 static SDL_TimerID timeout_timer;
+//static SDL_TimerID collection_timer;
 static bool timeout_timer_exists;
+//static bool collection_timer_exists;
 static SDL_sem *timeout_semaphore;
+//static SDL_sem *collection_semaphore;
 static char output_char_buf[SDL_OUTPUT_CHAR_BUF_SIZE];
 
-static z_colour colorname_to_infocomcode(char *colorname) {
-  if      (strcmp(colorname, "black") == 0)
-    return Z_COLOUR_BLACK;
-  else if (strcmp(colorname, "red") == 0)
-    return Z_COLOUR_RED;
-  else if (strcmp(colorname, "green") == 0)
-    return Z_COLOUR_GREEN;
-  else if (strcmp(colorname, "yellow") == 0)
-    return Z_COLOUR_YELLOW;
-  else if (strcmp(colorname, "blue") == 0)
-    return Z_COLOUR_BLUE;
-  else if (strcmp(colorname, "magenta") == 0)
-    return Z_COLOUR_MAGENTA;
-  else if (strcmp(colorname, "cyan") == 0)
-    return Z_COLOUR_CYAN;
-  else if (strcmp(colorname, "white") == 0)
-    return Z_COLOUR_WHITE;
-  else
-    return -1;
-}
+
+struct sdl_queued_event_struct {
+  int event_type;
+  z_ucs z_ucs_input;
+};
+typedef struct sdl_queued_event_struct sdl_queued_event;
+
+static sdl_queued_event *sdl_event_queue = NULL;
+static size_t sdl_event_queue_size = 0;
+static size_t sdl_event_queue_index = 0; // index of next stored event
+static size_t sdl_event_queue_size_increment = 1024;
+static SDL_mutex *sdl_event_queue_mutex;
+
+static SDL_Thread *sdl_interpreter_thread = NULL;
+static bool sdl_event_evluation_should_stop = false;
+
+static SDL_mutex *sdl_main_thread_working_mutex;
+static SDL_mutex *sdl_backup_surface_mutex;
+static SDL_cond *sdl_main_thread_working_cond;
+static bool main_thread_work_complete = true;
+static bool main_thread_should_update_screen = false;
+static bool main_thread_should_expose_screen = false;
+
+static z_file *story_stream = NULL;
+static z_file *blorb_stream = NULL;
+static z_file *savegame_to_restore= NULL;
+
+// 1: Detection of resize event, notification for interpreter thread. Wait for
+//    interpreter to finished processing.
+static SDL_mutex *resize_event_pending_mutex = NULL;
+static bool resize_event_pending = false;
+static bool wait_for_interpreter_when_resizing = false;
+
+// 2: Interpreter thread received resize notifiction and is processing it:
+static bool interpreter_is_processing_winch = false;
+
+// 3: Interpreter has finished processing
+static SDL_mutex *interpreter_finished_processing_winch_mutex = NULL;
+// Once this cond is set, the main thread will refresh the screen.
+static SDL_cond *interpreter_finished_processing_winch_cond = NULL;
+static bool interpreter_finished_processing_winch = false;
+
+
+static int winchCollectionEventType;
+
+int resize_event_new_x_size;
+int resize_event_new_y_size;
+
+bool resize_via_event_filter = false;
+
+bool do_expose = false;
+
+
+
+// handle SQL_Quit?
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 static void draw_rgb_pixel(int y, int x, uint8_t r, uint8_t g, uint8_t b) {
   Uint32 *bufp;
 
-  if ( SDL_MUSTLOCK(Surf_Display) ) {
-    if ( SDL_LockSurface(Surf_Display) < 0 ) {
-      return;
-    }
-  }
-
   bufp = (Uint32 *)Surf_Display->pixels
     + y*Surf_Display->pitch/4 + x;
   *bufp = SDL_MapRGB(Surf_Display->format, r, g, b);
-
-  if ( SDL_MUSTLOCK(Surf_Display) ) {
-    SDL_UnlockSurface(Surf_Display);
-  }
 }
 
 
@@ -385,7 +457,6 @@ static void link_interface_to_story(struct z_story *story) {
   uint8_t *image_data;
   SDL_Surface *icon_surface;
 
-
   SDL_SetWindowTitle(sdl_window, story->title);
 
   frontispiece_resource_number
@@ -488,13 +559,11 @@ static void output_interface_info() {
       i18n_sdl2_FIZMO_SDL_VERSION_P0S,
       FIZMO_SDL_VERSION);
   (void)streams_latin1_output("\n");
-#ifdef ENABLE_X11_IMAGES
   (void)i18n_translate(
       fizmo_sdl2_module_name,
       i18n_sdl2_LIBDRILBO_VERSION_P0S,
       get_drilbo_version());
   (void)streams_latin1_output("\n");
-#endif //ENABLE_X11_IMAGES
 }
 
 
@@ -513,25 +582,196 @@ static double get_device_to_pixel_ratio() {
 }
 
 
-static Uint32 timeout_callback(Uint32 interval, void *UNUSED(param)) {
-  SDL_Event event;
-  SDL_UserEvent userevent;
+void update_screen() {
+  TRACE_LOG("Doing update_screen().\n");
 
+  if (interpreter_is_processing_winch == true) {
+    interpreter_is_processing_winch = false;
+    SDL_LockMutex(interpreter_finished_processing_winch_mutex);
+    interpreter_finished_processing_winch = true;
+    SDL_CondSignal(interpreter_finished_processing_winch_cond);
+    SDL_UnlockMutex(interpreter_finished_processing_winch_mutex);
+  }
+  else {
+    // This has to be done by the main thread.
+    TRACE_LOG("Waiting for sdl_main_thread_working_mutex.\n");
+    SDL_LockMutex(sdl_main_thread_working_mutex);
+    TRACE_LOG("Locked sdl_main_thread_working_mutex.\n");
+    main_thread_should_update_screen = true;
+    main_thread_work_complete = false;
+    while (main_thread_work_complete == false) {
+      TRACE_LOG("Waiting for sdl_main_thread_working_cond ...\n");
+      SDL_CondWait(sdl_main_thread_working_cond, sdl_main_thread_working_mutex);
+    }
+    TRACE_LOG("Found sdl_main_thread_working_cond.\n");
+    SDL_UnlockMutex(sdl_main_thread_working_mutex);
+  }
+
+  TRACE_LOG("Finished update_screen().\n");
+}
+
+
+static void process_resize() {
+
+  sdl2_interface_screen_width_in_pixels = resize_event_new_x_size;
+  sdl2_interface_screen_height_in_pixels = resize_event_new_y_size;
+
+  SDL_SetWindowSize(sdl_window,
+      sdl2_interface_screen_width_in_pixels,
+      sdl2_interface_screen_height_in_pixels);
+
+  sdl2_interface_screen_width_in_pixels *= sdl2_device_to_pixel_ratio;
+  sdl2_interface_screen_height_in_pixels *= sdl2_device_to_pixel_ratio;
+
+  TRACE_LOG("%d x %d\n", sdl2_interface_screen_width_in_pixels,
+      sdl2_interface_screen_height_in_pixels);
+
+  SDL_FreeSurface(Surf_Display);
+  if ((Surf_Display = SDL_CreateRGBSurface(
+          0,
+          sdl2_interface_screen_width_in_pixels,
+          sdl2_interface_screen_height_in_pixels,
+          32,
+          0x00FF0000,
+          0x0000FF00,
+          0x000000FF,
+          0xFF000000)) == NULL) {
+    i18n_translate_and_exit(
+        fizmo_sdl2_module_name,
+        i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
+        -1,
+        "SDL_GetWindowSurface");
+  }
+
+  SDL_LockMutex(sdl_backup_surface_mutex);
+
+  SDL_FreeSurface(Surf_Backup);
+  if ((Surf_Backup = SDL_CreateRGBSurface(
+          0,
+          sdl2_interface_screen_width_in_pixels,
+          sdl2_interface_screen_height_in_pixels,
+          32,
+          0x00FF0000,
+          0x0000FF00,
+          0x000000FF,
+          0xFF000000)) == NULL) {
+    i18n_translate_and_exit(
+        fizmo_sdl2_module_name,
+        i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
+        -1,
+        "SDL_GetWindowSurface");
+  }
+
+  SDL_DestroyTexture(sdlTexture);
+  if ((sdlTexture = SDL_CreateTexture(sdl_renderer,
+          SDL_PIXELFORMAT_ARGB8888,
+          SDL_TEXTUREACCESS_STREAMING,
+          sdl2_interface_screen_width_in_pixels,
+          sdl2_interface_screen_height_in_pixels)) == NULL) {
+    i18n_translate_and_exit(
+        fizmo_sdl2_module_name,
+        i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
+        -1,
+        "SDL_CreateTexture");
+  }
+
+  SDL_UnlockMutex(sdl_backup_surface_mutex);
+}
+
+
+// This function is executed in the context of the interpreter thread.
+static int pull_sdl_event_from_queue(int *event_type, z_ucs *z_ucs_input) {
+  int result;
+  bool resize_event_has_to_be_processed = false;
+  bool wait_for_terp = false;
+
+  // Before we actually lookingg at the event queue, we have to process
+  // window-resizes seperately (since resizing blocks the event queue in SDL's
+  // Mac OS X implementation.
+
+  SDL_LockMutex(resize_event_pending_mutex);
+  if (resize_event_pending == true) {
+    TRACE_LOG("Gotta resize.\n");
+    wait_for_terp = wait_for_interpreter_when_resizing;
+    resize_event_has_to_be_processed = true;
+    resize_event_pending = false;
+  }
+  SDL_UnlockMutex(resize_event_pending_mutex);
+
+  if (do_expose == true) {
+    TRACE_LOG("Waiting for sdl_main_thread_working_mutex.\n");
+    SDL_LockMutex(sdl_main_thread_working_mutex);
+    TRACE_LOG("Locked sdl_main_thread_working_mutex.\n");
+    main_thread_should_expose_screen = true;
+    main_thread_work_complete = false;
+    while (main_thread_work_complete == false) {
+      TRACE_LOG("Waiting for sdl_main_thread_working_cond ...\n");
+      SDL_CondWait(sdl_main_thread_working_cond, sdl_main_thread_working_mutex);
+    }
+    TRACE_LOG("Found sdl_main_thread_working_cond.\n");
+    do_expose = false;
+    SDL_UnlockMutex(sdl_main_thread_working_mutex);
+  }
+
+  if (resize_event_has_to_be_processed == true) {
+    process_resize();
+    *event_type = EVENT_WAS_WINCH;
+    if (wait_for_terp == true) {
+      TRACE_LOG("WAITING.\n");
+      interpreter_is_processing_winch = true;
+    }
+    *z_ucs_input = 0;
+    result = 0;
+  }
+  else {
+    // In case we don't have to process resizing events we check the event queue.
+
+    SDL_LockMutex(sdl_event_queue_mutex);
+
+    if (sdl_event_queue_index > 0) {
+      *event_type = sdl_event_queue[0].event_type;
+      *z_ucs_input = sdl_event_queue[0].z_ucs_input;
+      if (--sdl_event_queue_index > 0) {
+        memmove(
+            sdl_event_queue,
+            sdl_event_queue + 1,
+            sizeof(sdl_queued_event)*sdl_event_queue_index);
+      }
+      result = 0;
+    }
+    else {
+      result = -1;
+    }
+
+    SDL_UnlockMutex(sdl_event_queue_mutex);
+  }
+
+  return result;
+}
+
+
+static void push_sdl_event_to_queue(int event_type, z_ucs z_ucs_input) {
+  TRACE_LOG("push\n");
+  SDL_LockMutex(sdl_event_queue_mutex);
+  if (sdl_event_queue_index == sdl_event_queue_size) {
+    sdl_event_queue_size += sdl_event_queue_size_increment;
+    sdl_event_queue = fizmo_realloc(
+        sdl_event_queue, sizeof(sdl_queued_event)*sdl_event_queue_size);
+  }
+  sdl_event_queue[sdl_event_queue_index].event_type = event_type;
+  sdl_event_queue[sdl_event_queue_index].z_ucs_input = z_ucs_input;
+  sdl_event_queue_index++;
+  SDL_UnlockMutex(sdl_event_queue_mutex);
+}
+
+
+static Uint32 timeout_callback(Uint32 interval, void *UNUSED(param)) {
   SDL_SemWait(timeout_semaphore);
 
   if (timeout_timer_exists == true) {
     SDL_RemoveTimer(timeout_timer);
     timeout_timer_exists = false;
-
-    userevent.type = SDL_USEREVENT;
-    userevent.code = 0;
-    userevent.data1 = NULL;
-    userevent.data2 = NULL;
-
-    event.type = SDL_USEREVENT;
-    event.user = userevent;
-
-    SDL_PushEvent(&event);
+    push_sdl_event_to_queue(EVENT_WAS_TIMEOUT, 0);
   }
 
   SDL_SemPost(timeout_semaphore);
@@ -540,31 +780,13 @@ static Uint32 timeout_callback(Uint32 interval, void *UNUSED(param)) {
 }
 
 
-void update_screen() {
-  TRACE_LOG("Doing update_screen().\n");
-  SDL_UpdateTexture(
-      sdlTexture,
-      NULL,
-      Surf_Display->pixels,
-      Surf_Display->pitch);
-  SDL_RenderClear(sdl_renderer);
-  SDL_RenderCopy(sdl_renderer, sdlTexture, NULL, NULL);
-  SDL_RenderPresent(sdl_renderer);
-}
-
-
 static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
     bool poll_only) {
-  bool running = true;
-  SDL_Event Event;
   int wait_result, result = -1;
-  char *ptr;
-  const Uint8 *state;
 
   TRACE_LOG("Invoked get_next_event.\n");
 
   if (timeout_millis > 0) {
-    //printf("input timeout: %d ms.\n", timeout_millis);
     TRACE_LOG("input timeout: %d ms.\n", timeout_millis);
     SDL_SemWait(timeout_semaphore);
     timeout_timer = SDL_AddTimer(timeout_millis, &timeout_callback, NULL);
@@ -572,172 +794,17 @@ static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
     SDL_SemPost(timeout_semaphore);
   }
 
-  //printf("polling...\n");
-  while (running == true) {
-
-    if (poll_only == true) {
-      wait_result = SDL_PollEvent(&Event);
-      TRACE_LOG("poll's wait_result: %d.\n", wait_result);
-
-      if (wait_result == 0) {
+  while (true) {
+    TRACE_LOG("Pulling next event from queue ...\n");
+    wait_result = pull_sdl_event_from_queue(&result, z_ucs_input);
+    if ( (wait_result != -1) || (poll_only == true) ) {
+      if (wait_result == -1) {
         result = EVENT_WAS_NOTHING;
       }
-      else {
-        TRACE_LOG("poll's eventtype: %d.\n", Event.type);
-      }
+      TRACE_LOG("poll's wait_result: %d.\n", wait_result);
+      break;
     }
-    else {
-      wait_result = SDL_WaitEvent(&Event);
-    }
-
-    if (Event.type == SDL_QUIT) {
-      TRACE_LOG("quit\n");
-      running = false;
-    }
-    else if (Event.type == SDL_TEXTINPUT) {
-      result = EVENT_WAS_INPUT;
-      ptr = Event.text.text;
-      *z_ucs_input = utf8_char_to_zucs_char(&ptr);
-      TRACE_LOG("z_ucs_input: %d.\n", *z_ucs_input);
-      running = false;
-    }
-    else if (Event.type == SDL_KEYDOWN) {
-      TRACE_LOG("Event was keydown.\n");
-      // https://wiki.libsdl.org/SDL_Scancode
-
-      state = SDL_GetKeyboardState(NULL);
-      if ( (state[SDL_SCANCODE_LCTRL])|| (state[SDL_SCANCODE_RCTRL]) ) {
-        TRACE_LOG("ctrl\n");
-        if (state[SDL_SCANCODE_L]) {
-          TRACE_LOG("ctrl-l.\n");
-          result = EVENT_WAS_CODE_CTRL_L;
-          running = false;
-        }
-        else if (state[SDL_SCANCODE_R]) {
-          TRACE_LOG("ctrl-r.\n");
-          result = EVENT_WAS_CODE_CTRL_R;
-          running = false;
-        }
-        else if (state[SDL_SCANCODE_A]) {
-          result = EVENT_WAS_CODE_CTRL_A;
-          running = false;
-        }
-        else if (state[SDL_SCANCODE_E]) {
-          result = EVENT_WAS_CODE_CTRL_E;
-          running = false;
-        }
-      }
-      else if (Event.key.keysym.sym == SDLK_LEFT) {
-        result = EVENT_WAS_CODE_CURSOR_LEFT;
-        running = false;
-      }
-      else if (Event.key.keysym.sym == SDLK_RIGHT) {
-        result = EVENT_WAS_CODE_CURSOR_RIGHT;
-        running = false;
-      }
-      else if (Event.key.keysym.sym == SDLK_DOWN) {
-        result = EVENT_WAS_CODE_CURSOR_DOWN;
-        running = false;
-      }
-      else if (Event.key.keysym.sym == SDLK_UP) {
-        result = EVENT_WAS_CODE_CURSOR_UP;
-        running = false;
-      }
-      else if (Event.key.keysym.sym == SDLK_BACKSPACE) {
-        result = EVENT_WAS_CODE_BACKSPACE;
-        running = false;
-      }
-      else if (Event.key.keysym.sym == SDLK_DELETE) {
-        result = EVENT_WAS_CODE_DELETE;
-        running = false;
-      }
-      else if (Event.key.keysym.sym == SDLK_RETURN) {
-        result = EVENT_WAS_INPUT;
-        *z_ucs_input = Z_UCS_NEWLINE;
-        running = false;
-      }
-      else if (Event.key.keysym.sym == SDLK_PAGEDOWN) {
-        result = EVENT_WAS_CODE_PAGE_DOWN;
-        running = false;
-      }
-      else if (Event.key.keysym.sym == SDLK_PAGEUP) {
-        result = EVENT_WAS_CODE_PAGE_UP;
-        running = false;
-      }
-    }
-    else if (Event.type == SDL_WINDOWEVENT) {
-      TRACE_LOG("Found SDL_WINDOWEVENT: %d.\n", Event.window.event);
-
-      /*
-      if (Event.window.event == SDL_WINDOWEVENT_EXPOSED) {
-        update_screen();
-      }
-      */
-
-      if (Event.window.event == SDL_WINDOWEVENT_RESIZED) {
-        TRACE_LOG("Found SDL_WINDOWEVENT_RESIZED.\n");
-
-        sdl2_interface_screen_width_in_pixels
-          = Event.window.data1 < MINIMUM_X_WINDOW_SIZE
-          ? MINIMUM_X_WINDOW_SIZE
-          : Event.window.data1;
-
-        sdl2_interface_screen_height_in_pixels
-          = Event.window.data2 < MINIMUM_Y_WINDOW_SIZE
-          ? MINIMUM_Y_WINDOW_SIZE
-          : Event.window.data2;
-
-        SDL_SetWindowSize(sdl_window,
-            sdl2_interface_screen_width_in_pixels,
-            sdl2_interface_screen_height_in_pixels);
-
-        sdl2_interface_screen_width_in_pixels *= sdl2_device_to_pixel_ratio;
-        sdl2_interface_screen_height_in_pixels *= sdl2_device_to_pixel_ratio;
-
-        SDL_FreeSurface(Surf_Display);
-        if ((Surf_Display = SDL_CreateRGBSurface(
-                0,
-                sdl2_interface_screen_width_in_pixels,
-                sdl2_interface_screen_height_in_pixels,
-                32,
-                0x00FF0000,
-                0x0000FF00,
-                0x000000FF,
-                0xFF000000)) == NULL) {
-          i18n_translate_and_exit(
-              fizmo_sdl2_module_name,
-              i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
-              -1,
-              "SDL_GetWindowSurface");
-        }
-
-        SDL_DestroyTexture(sdlTexture);
-        if ((sdlTexture = SDL_CreateTexture(sdl_renderer,
-                SDL_PIXELFORMAT_ARGB8888,
-                SDL_TEXTUREACCESS_STREAMING,
-                sdl2_interface_screen_width_in_pixels,
-                sdl2_interface_screen_height_in_pixels)) == NULL) {
-          i18n_translate_and_exit(
-              fizmo_sdl2_module_name,
-              i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
-              -1,
-              "SDL_CreateTexture");
-        }
-
-        result = EVENT_WAS_WINCH;
-        running = false;
-      }
-    }
-    else if (Event.type == SDL_USEREVENT) {
-      result = EVENT_WAS_TIMEOUT;
-      running = false;
-    }
-
-    if (poll_only == true) {
-      if (result != -1) {
-        running = false;
-      }
-    }
+    SDL_Delay(10);
   }
 
   if (timeout_millis > 0) {
@@ -765,12 +832,6 @@ void copy_area(int dsty, int dstx, int srcy, int srcx, int height, int width) {
   TRACE_LOG("copy-area: %d, %d to %d, %d: %d x %d.\n",
       srcx, srcy, dstx, dsty, width, height);
 
-  if ( SDL_MUSTLOCK(Surf_Display) ) {
-    if ( SDL_LockSurface(Surf_Display) < 0 ) {
-      return;
-    }
-  }
-
   if (srcy > dsty) {
     Uint32 *srcp = (Uint32 *)Surf_Display->pixels
       + srcy*Surf_Display->pitch/4 + srcx;
@@ -795,10 +856,6 @@ void copy_area(int dsty, int dstx, int srcy, int srcx, int height, int width) {
       dstp -= Surf_Display->pitch/4;
     }
   }
-
-  if ( SDL_MUSTLOCK(Surf_Display) ) {
-    SDL_UnlockSurface(Surf_Display);
-  }
 }
 
 
@@ -806,24 +863,12 @@ void fill_area(int startx, int starty, int xsize, int ysize,
     uint8_t r, uint8_t g, uint8_t b) {
   int y, x;
   Uint32 sdl_colour;
-
-  /*
-  printf("Filling area %d,%d / %d,%d with %d\n",
-      startx, starty, xsize, ysize, colour);
-  */
+  Uint32 *srcp;
 
   TRACE_LOG("Filling area %d,%d / %d,%d with %d,%d,%d\n",
       startx, starty, xsize, ysize, r, g, b);
 
   sdl_colour= SDL_MapRGB(Surf_Display->format, r, g, b);
-
-  if ( SDL_MUSTLOCK(Surf_Display) ) {
-    if ( SDL_LockSurface(Surf_Display) < 0 ) {
-      return;
-    }
-  }
-
-  Uint32 *srcp;
 
   for (y=0; y<ysize; y++) {
     srcp = (Uint32 *)Surf_Display->pixels
@@ -832,10 +877,6 @@ void fill_area(int startx, int starty, int xsize, int ysize,
       *srcp = sdl_colour;
       srcp++;
     }
-  }
-
-  if ( SDL_MUSTLOCK(Surf_Display) ) {
-    SDL_UnlockSurface(Surf_Display);
   }
 }
 
@@ -867,6 +908,99 @@ static int console_output(z_ucs *output) {
   fflush(stdout);
 
   return 0;
+}
+
+
+static int interpreter_thread_function(void *UNUSED(ptr)) {
+
+  fizmo_start(
+      story_stream,
+      blorb_stream,
+      savegame_to_restore);
+
+  sdl_event_evluation_should_stop = true;
+
+  return 0;
+}
+
+
+void do_update_screen() {
+  TRACE_LOG("locking sdl_backup_surface_mutex...\n");
+  SDL_LockMutex(sdl_backup_surface_mutex);
+  TRACE_LOG("sdl_backup_surface_mutex locked\n");
+
+  TRACE_LOG("Main thread updating screen.\n");
+  SDL_BlitSurface(Surf_Display, NULL, Surf_Backup, NULL);
+  SDL_UpdateTexture(
+      sdlTexture,
+      NULL,
+      Surf_Display->pixels,
+      Surf_Display->pitch);
+  SDL_RenderClear(sdl_renderer);
+  SDL_RenderCopy(sdl_renderer, sdlTexture, NULL, NULL);
+  SDL_RenderPresent(sdl_renderer);
+
+  SDL_UnlockMutex(sdl_backup_surface_mutex);
+}
+
+
+void preprocess_resize(int new_x_size, int new_y_size,
+    bool wait_for_interpreter_processing) {
+
+  SDL_LockMutex(resize_event_pending_mutex);
+
+  resize_event_new_x_size
+    = new_x_size < MINIMUM_X_WINDOW_SIZE
+    ? MINIMUM_X_WINDOW_SIZE
+    : new_x_size;
+
+  resize_event_new_y_size
+    = new_y_size < MINIMUM_Y_WINDOW_SIZE
+    ? MINIMUM_Y_WINDOW_SIZE
+    : new_y_size;
+
+  resize_event_pending = true;
+  wait_for_interpreter_when_resizing = wait_for_interpreter_processing;
+
+  if (wait_for_interpreter_processing) {
+    SDL_LockMutex(interpreter_finished_processing_winch_mutex);
+  }
+
+  SDL_UnlockMutex(resize_event_pending_mutex);
+
+  if (wait_for_interpreter_processing) {
+    // Wait for the main thread to process the resize event. We have to do
+    // this since polling the event queue in SDL's Mac OS X implementation
+    // blocks the SDL input queue we would never have the chance to repaint
+    // the screen in a regular way.
+
+    TRACE_LOG("Waiting for interpreter_finished_processing_winch_cond ...\n");
+    interpreter_finished_processing_winch = false;
+    while (interpreter_finished_processing_winch == false) {
+      SDL_CondWait(
+          interpreter_finished_processing_winch_cond,
+          interpreter_finished_processing_winch_mutex);
+    }
+
+    TRACE_LOG("Found interpreter_finished_processing_winch_cond.\n");
+    do_update_screen();
+
+    SDL_UnlockMutex(interpreter_finished_processing_winch_mutex);
+  }
+}
+
+
+int sdl_event_filter(void * userdata, SDL_Event *event) {
+
+  if ( (event->type == SDL_WINDOWEVENT)
+      && (event->window.event == SDL_WINDOWEVENT_RESIZED) ) {
+    TRACE_LOG("resize found in filter function.\n");
+    preprocess_resize(event->window.data1, event->window.data2, true);
+    return 0;
+  }
+  else {
+    return 1;
+  }
 }
 
 
@@ -902,15 +1036,31 @@ int main(int argc, char *argv[]) {
   int story_filename_parameter_number = -1;
   int blorb_filename_parameter_number = -1;
   char *input_file;
-  z_file *story_stream = NULL, *blorb_stream = NULL;
   z_colour new_color;
   int int_value, width, height;
   double hidpi_x_scale, hidpi_y_scale;
-  z_file *savegame_to_restore= NULL;
+  int wait_result;
+  SDL_Event Event;
+  char *ptr;
+  z_ucs z_ucs_input;
+  const Uint8 *state;
 
 #ifdef ENABLE_TRACING
   turn_on_trace();
 #endif // ENABLE_TRACING
+
+#ifdef _WIN32
+  #ifdef _WIN64
+  #endif
+#elif __APPLE__
+  #ifdef TARGET_OS_MAC
+  resize_via_event_filter = true;
+  #endif
+#elif __linux__
+#elif __unix__ // all unices not caught above
+#elif defined(_POSIX_VERSION)
+#else
+#endif
 
   fizmo_register_screen_pixel_interface(&sdl2_interface);
 
@@ -1013,12 +1163,13 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
       }
 
-      if ((new_color = colorname_to_infocomcode(argv[argi])) == -1) {
+      if ((new_color = color_name_to_z_colour(argv[argi])) == -1) {
         print_startup_syntax();
         exit(EXIT_FAILURE);
       }
 
       screen_default_background_color = new_color;
+      set_configuration_value("background-color", argv[argi]);
       argi++;
     }
     else if (
@@ -1029,12 +1180,13 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
       }
 
-      if ((new_color = colorname_to_infocomcode(argv[argi])) == -1) {
+      if ((new_color = color_name_to_z_colour(argv[argi])) == -1) {
         print_startup_syntax();
         exit(EXIT_FAILURE);
       }
 
       screen_default_foreground_color = new_color;
+      set_configuration_value("foreground-color", argv[argi]);
       argi++;
     }
     else if (
@@ -1045,7 +1197,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
       }
 
-      if ((new_color = colorname_to_infocomcode(argv[argi])) == -1) {
+      if ((new_color = color_name_to_z_colour(argv[argi])) == -1) {
         print_startup_syntax();
         exit(EXIT_FAILURE);
       }
@@ -1210,8 +1362,6 @@ int main(int argc, char *argv[]) {
       exit(EXIT_FAILURE);
     }
     else {
-      //SDL_putenv("SDL_VIDEODRIVER=Quartz");
-
       if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
         i18n_translate_and_exit(
             fizmo_sdl2_module_name,
@@ -1219,19 +1369,26 @@ int main(int argc, char *argv[]) {
             -1,
             "SDL_Init");
 
+      winchCollectionEventType = SDL_RegisterEvents(1);
+
+      if (resize_via_event_filter == true) {
+        SDL_SetEventFilter(sdl_event_filter, NULL);
+      }
+
       SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1");
 
-      atexit(SDL_Quit);
-      //SDL_EnableUNICODE(1);
       //SDL_EnableKeyRepeat(200, 20);
 
-      /*
-      if ((Surf_Display = SDL_SetVideoMode(
-              sdl2_interface_screen_width_in_pixels,
-              sdl2_interface_screen_height_in_pixels,
-              sdl2_color_depth,
-              sdl2_video_flags)) == NULL)
-        */
+      atexit(SDL_Quit);
+
+      sdl_event_queue_mutex = SDL_CreateMutex();
+      sdl_main_thread_working_mutex = SDL_CreateMutex();
+      sdl_backup_surface_mutex = SDL_CreateMutex();
+      resize_event_pending_mutex = SDL_CreateMutex();
+      interpreter_finished_processing_winch_mutex = SDL_CreateMutex();
+
+      sdl_main_thread_working_cond = SDL_CreateCond();
+      interpreter_finished_processing_winch_cond = SDL_CreateCond();
 
       if ((sdl_window = SDL_CreateWindow("fizmo-sdl2",
           SDL_WINDOWPOS_UNDEFINED,
@@ -1280,6 +1437,22 @@ int main(int argc, char *argv[]) {
             "SDL_GetWindowSurface");
       }
 
+      if ((Surf_Backup = SDL_CreateRGBSurface(
+              0,
+              sdl2_interface_screen_width_in_pixels,
+              sdl2_interface_screen_height_in_pixels,
+              32,
+              0x00FF0000,
+              0x0000FF00,
+              0x000000FF,
+              0xFF000000)) == NULL) {
+        i18n_translate_and_exit(
+            fizmo_sdl2_module_name,
+            i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
+            -1,
+            "SDL_GetWindowSurface");
+      }
+
       if ((sdlTexture = SDL_CreateTexture(sdl_renderer,
           SDL_PIXELFORMAT_ARGB8888,
           SDL_TEXTUREACCESS_STREAMING,
@@ -1298,12 +1471,142 @@ int main(int argc, char *argv[]) {
       fizmo_register_sound_interface(&SOUND_INTERFACE_STRUCT_NAME);
 #endif // SOUND_INTERFACE_STRUCT_NAME
 
-      fizmo_start(
-          story_stream,
-          blorb_stream,
-          savegame_to_restore);
+      sdl_interpreter_thread = SDL_CreateThread(
+          interpreter_thread_function, "InterpreterThread", NULL);
+
+      // --- begin event evaluation
+      do {
+
+        if (main_thread_work_complete == false) {
+          TRACE_LOG("Found some work to do.\n");
+          SDL_LockMutex(sdl_main_thread_working_mutex);
+
+          if (main_thread_should_update_screen == true) {
+            do_update_screen();
+            main_thread_should_update_screen = false;
+          }
+
+          if (main_thread_should_expose_screen == true) {
+            SDL_LockMutex(sdl_backup_surface_mutex);
+
+            SDL_UpdateTexture(
+                sdlTexture,
+                NULL,
+                Surf_Backup->pixels,
+                Surf_Backup->pitch);
+
+            SDL_RenderClear(sdl_renderer);
+            SDL_RenderCopy(sdl_renderer, sdlTexture, NULL, NULL);
+            SDL_RenderPresent(sdl_renderer);
+
+            SDL_UnlockMutex(sdl_backup_surface_mutex);
+          }
+
+          main_thread_work_complete = true;
+          TRACE_LOG("Main thread work complete.\n");
+          SDL_CondSignal(sdl_main_thread_working_cond);
+          SDL_UnlockMutex(sdl_main_thread_working_mutex);
+          TRACE_LOG("Continuing event loop.\n");
+        }
+
+        TRACE_LOG("Starting poll...\n");
+        wait_result = SDL_PollEvent(&Event);
+        TRACE_LOG("poll's wait_result: %d.\n", wait_result);
+        if (wait_result == 0) {
+          SDL_Delay(10);
+        }
+        else {
+          /*
+             if (Event.type == SDL_QUIT) {
+             TRACE_LOG("quit\n");
+             running = false;
+             }
+             */
+
+          if (Event.type == SDL_TEXTINPUT) {
+            ptr = Event.text.text;
+            z_ucs_input = utf8_char_to_zucs_char(&ptr);
+            TRACE_LOG("z_ucs_input: %d.\n", z_ucs_input);
+            push_sdl_event_to_queue(EVENT_WAS_INPUT, z_ucs_input);
+          }
+          else if (Event.type == SDL_KEYDOWN) {
+            TRACE_LOG("Event was keydown.\n");
+            // https://wiki.libsdl.org/SDL_Scancode
+
+            state = SDL_GetKeyboardState(NULL);
+            if ( (state[SDL_SCANCODE_LCTRL])|| (state[SDL_SCANCODE_RCTRL]) ) {
+              TRACE_LOG("ctrl\n");
+              if (state[SDL_SCANCODE_L]) {
+                TRACE_LOG("ctrl-l.\n");
+                push_sdl_event_to_queue(EVENT_WAS_CODE_CTRL_L, 0);
+              }
+              else if (state[SDL_SCANCODE_R]) {
+                TRACE_LOG("ctrl-r.\n");
+                push_sdl_event_to_queue(EVENT_WAS_CODE_CTRL_R, 0);
+              }
+              else if (state[SDL_SCANCODE_A]) {
+                push_sdl_event_to_queue(EVENT_WAS_CODE_CTRL_A, 0);
+              }
+              else if (state[SDL_SCANCODE_E]) {
+                push_sdl_event_to_queue(EVENT_WAS_CODE_CTRL_E, 0);
+              }
+            }
+            else if (Event.key.keysym.sym == SDLK_LEFT) {
+              push_sdl_event_to_queue(EVENT_WAS_CODE_CURSOR_LEFT, 0);
+            }
+            else if (Event.key.keysym.sym == SDLK_RIGHT) {
+              push_sdl_event_to_queue(EVENT_WAS_CODE_CURSOR_RIGHT, 0);
+            }
+            else if (Event.key.keysym.sym == SDLK_DOWN) {
+              push_sdl_event_to_queue(EVENT_WAS_CODE_CURSOR_DOWN, 0);
+            }
+            else if (Event.key.keysym.sym == SDLK_UP) {
+              push_sdl_event_to_queue(EVENT_WAS_CODE_CURSOR_UP, 0);
+            }
+            else if (Event.key.keysym.sym == SDLK_BACKSPACE) {
+              push_sdl_event_to_queue(EVENT_WAS_CODE_BACKSPACE, 0);
+            }
+            else if (Event.key.keysym.sym == SDLK_DELETE) {
+              push_sdl_event_to_queue(EVENT_WAS_CODE_DELETE, 0);
+            }
+            else if (Event.key.keysym.sym == SDLK_RETURN) {
+              push_sdl_event_to_queue(EVENT_WAS_INPUT, Z_UCS_NEWLINE);
+            }
+            else if (Event.key.keysym.sym == SDLK_PAGEDOWN) {
+              push_sdl_event_to_queue(EVENT_WAS_CODE_PAGE_DOWN, 0);
+            }
+            else if (Event.key.keysym.sym == SDLK_PAGEUP) {
+              push_sdl_event_to_queue(EVENT_WAS_CODE_PAGE_UP, 0);
+            }
+          }
+          else if (Event.type == SDL_WINDOWEVENT) {
+            TRACE_LOG("Found SDL_WINDOWEVENT: %d.\n", Event.window.event);
+
+            if (Event.window.event == SDL_WINDOWEVENT_EXPOSED) {
+              TRACE_LOG("Found SDL_WINDOWEVENT_EXPOSED.\n");
+              do_expose = true;
+            }
+            else if ( (resize_via_event_filter == false)
+                && (Event.window.event == SDL_WINDOWEVENT_RESIZED) ) {
+              TRACE_LOG("Found SDL_WINDOWEVENT_RESIZED.\n");
+
+              preprocess_resize(
+                  Event.window.data1,
+                  Event.window.data2,
+                  false);
+            }
+          }
+        }
+      }
+      while (sdl_event_evluation_should_stop == false);
+      // --- end event evaluation
 
       SDL_DestroySemaphore(timeout_semaphore);
+
+      SDL_DestroyTexture(sdlTexture);
+      SDL_FreeSurface(Surf_Backup);
+      SDL_FreeSurface(Surf_Display);
+
       SDL_Quit();
     }
   }
