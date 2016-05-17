@@ -133,7 +133,7 @@ static sdl_queued_event *sdl_event_queue = NULL;
 static size_t sdl_event_queue_size = 0;
 static size_t sdl_event_queue_index = 0; // index of next stored event
 static size_t sdl_event_queue_size_increment = 1024;
-static SDL_mutex *sdl_event_queue_mutex;
+static SDL_mutex *sdl_event_queue_mutex = NULL;
 
 static SDL_Thread *sdl_interpreter_thread = NULL;
 static bool sdl_event_evluation_should_stop = false;
@@ -1044,6 +1044,7 @@ int main(int argc, char *argv[]) {
   char *ptr;
   z_ucs z_ucs_input;
   const Uint8 *state;
+  int thread_status;
 
 #ifdef ENABLE_TRACING
   turn_on_trace();
@@ -1601,11 +1602,24 @@ int main(int argc, char *argv[]) {
       while (sdl_event_evluation_should_stop == false);
       // --- end event evaluation
 
+      SDL_WaitThread(sdl_interpreter_thread, &thread_status);
+
       SDL_DestroySemaphore(timeout_semaphore);
 
-      SDL_DestroyTexture(sdlTexture);
-      SDL_FreeSurface(Surf_Backup);
+      SDL_DestroyWindow(sdl_window);
+      SDL_DestroyRenderer(sdl_renderer);
       SDL_FreeSurface(Surf_Display);
+      SDL_FreeSurface(Surf_Backup);
+      SDL_DestroyTexture(sdlTexture);
+
+      SDL_DestroyCond(interpreter_finished_processing_winch_cond);
+      SDL_DestroyCond(sdl_main_thread_working_cond);
+
+      SDL_DestroyMutex(interpreter_finished_processing_winch_mutex);
+      SDL_DestroyMutex(resize_event_pending_mutex);
+      SDL_DestroyMutex(sdl_backup_surface_mutex);
+      SDL_DestroyMutex(sdl_main_thread_working_mutex);
+      SDL_DestroyMutex(sdl_event_queue_mutex);
 
       SDL_Quit();
     }
