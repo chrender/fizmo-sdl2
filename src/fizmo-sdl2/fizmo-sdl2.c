@@ -144,6 +144,7 @@ static SDL_cond *sdl_main_thread_working_cond;
 static bool main_thread_work_complete = true;
 static bool main_thread_should_update_screen = false;
 static bool main_thread_should_expose_screen = false;
+static bool main_thread_should_set_title = false;
 
 static z_file *story_stream = NULL;
 static z_file *blorb_stream = NULL;
@@ -174,6 +175,8 @@ bool resize_via_event_filter = false;
 
 bool do_expose = false;
 
+static int frontispiece_resource_number;
+static char* story_title;
 
 
 // handle SQL_Quit?
@@ -447,9 +450,8 @@ static char **get_config_option_names() {
 }
 
 
-static void link_interface_to_story(struct z_story *story) {
+static void set_title_and_icon() {
   z_image *frontispiece;
-  int frontispiece_resource_number;
   z_image *window_icon_zimage;
   uint32_t *icon_pixels;
   int x, y, pixel_left_shift;
@@ -457,11 +459,7 @@ static void link_interface_to_story(struct z_story *story) {
   uint8_t *image_data;
   SDL_Surface *icon_surface;
 
-  SDL_SetWindowTitle(sdl_window, story->title);
-
-  frontispiece_resource_number
-    = active_blorb_interface->get_frontispiece_resource_number(
-        active_z_story->blorb_map);
+  SDL_SetWindowTitle(sdl_window, story_title);
 
   if (frontispiece_resource_number >= 0) {
     TRACE_LOG("frontispiece resnum: %d.\n", frontispiece_resource_number);
@@ -541,6 +539,32 @@ static void link_interface_to_story(struct z_story *story) {
       frontispiece = NULL;
     }
   }
+}
+
+
+static void link_interface_to_story(struct z_story *story) {
+  int resource_number;
+
+  story_title = story->title;
+
+  resource_number
+    = active_blorb_interface->get_frontispiece_resource_number(
+        active_z_story->blorb_map);
+
+  frontispiece_resource_number
+    = resource_number >= 0 ? resource_number : -1;
+
+  TRACE_LOG("Waiting for sdl_main_thread_working_mutex.\n");
+  SDL_LockMutex(sdl_main_thread_working_mutex);
+  TRACE_LOG("Locked sdl_main_thread_working_mutex.\n");
+  main_thread_should_set_title = true;
+  main_thread_work_complete = false;
+  while (main_thread_work_complete == false) {
+    TRACE_LOG("Waiting for sdl_main_thread_working_cond ...\n");
+    SDL_CondWait(sdl_main_thread_working_cond, sdl_main_thread_working_mutex);
+  }
+  TRACE_LOG("Found sdl_main_thread_working_cond.\n");
+  SDL_UnlockMutex(sdl_main_thread_working_mutex);
 }
 
 
@@ -1501,6 +1525,11 @@ int main(int argc, char *argv[]) {
             SDL_RenderPresent(sdl_renderer);
 
             SDL_UnlockMutex(sdl_backup_surface_mutex);
+          }
+
+          if (main_thread_should_set_title == true) {
+            set_title_and_icon();
+            main_thread_should_set_title = false;
           }
 
           main_thread_work_complete = true;
