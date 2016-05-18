@@ -1,4 +1,4 @@
-.TH FIZMO-SDL2 6 "May 17, 2016" "0.7.0"
+.TH FIZMO-SDL2 6 "May 18, 2016" "0.7.0"
 .SH NAME
 fizmo-sdl2
 - SDL2-based implementation of the fizmo Z-Machine Interpreter.
@@ -86,6 +86,13 @@ Disable X11 graphics.
 .TP
 .B -pr, --predictable
 Start with random generator in predictable mode.
+.TP
+.B -ps, --process-sdl2-events
+Setting this option to \[lq]queue\[rq] defines that sdl2 resize-related
+events should be processed directly from the event queue, setting it to
+\[lq]filter\[rq] uses SDL's event filter for these kind of events. Changing
+this setting might help in case resizing the interpreter window on your
+system does not work.
 .TP
 .B -ra, --random
 Start with random generator in standard random mode.

@@ -57,3 +57,4 @@ Cursorgarbe festlegen.
 Schriftgröße festlegen.
 Fensterbreite festlegen.
 Fensterhöhe definieren.
+SDL2-Eventverarbeitungsmethode festlegen.

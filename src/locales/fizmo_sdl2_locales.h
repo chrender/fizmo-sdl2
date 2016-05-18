@@ -92,6 +92,7 @@
 #define i18n_sdl2_SET_FONT_SIZE 56
 #define i18n_sdl2_SET_WINDOW_WIDTH 57
 #define i18n_sdl2_SET_WINDOW_HEIGHT 58
+#define i18n_sdl2_PROCESS_SDL2_EVENTS 59
 
 extern z_ucs fizmo_sdl2_module_name[];
 

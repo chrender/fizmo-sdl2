@@ -57,3 +57,4 @@ Set cursor color.
 Set font size.
 Set window width.
 Define window height.
+Select how to process SDL2-events.
