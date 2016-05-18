@@ -209,6 +209,8 @@ static bool do_expose = false;
 static int frontispiece_resource_number;
 static char* story_title;
 
+static bool mean_thread_is_waiting_for_interpreter_screen_update = false;
+
 // handle SQL_Quit?
 
 
@@ -656,6 +658,10 @@ static double get_device_to_pixel_ratio() {
 static void process_resize2() {
   SDL_LockMutex(sdl_backup_surface_mutex);
 
+  TRACE_LOG("%d / %d\n",
+      unscaled_sdl2_interface_screen_width_in_pixels,
+      unscaled_sdl2_interface_screen_height_in_pixels);
+
   SDL_SetWindowSize(sdl_window,
       unscaled_sdl2_interface_screen_width_in_pixels,
       unscaled_sdl2_interface_screen_height_in_pixels);
@@ -698,12 +704,7 @@ static void process_resize2() {
 void update_screen() {
   TRACE_LOG("Doing update_screen().\n");
 
-  if (interpreter_is_processing_winch == true) {
-    process_resize2();
-  }
-
-  if ( (interpreter_is_processing_winch == true)
-      && (resize_via_event_filter == true) ) {
+  if (mean_thread_is_waiting_for_interpreter_screen_update == true) {
     SDL_LockMutex(interpreter_finished_processing_winch_mutex);
     interpreter_finished_processing_winch = true;
     SDL_CondSignal(interpreter_finished_processing_winch_cond);
@@ -723,8 +724,6 @@ void update_screen() {
     TRACE_LOG("Found sdl_main_thread_working_cond.\n");
     SDL_UnlockMutex(sdl_main_thread_working_mutex);
   }
-
-  interpreter_is_processing_winch = false;
 
   TRACE_LOG("Finished update_screen().\n");
 }
@@ -1073,9 +1072,9 @@ void preprocess_resize(int new_x_size, int new_y_size,
     : new_y_size;
 
   resize_event_pending = true;
-  //wait_for_interpreter_when_resizing = wait_for_interpreter_processing;
 
   if (wait_for_interpreter_processing) {
+  mean_thread_is_waiting_for_interpreter_screen_update = true;
     SDL_LockMutex(interpreter_finished_processing_winch_mutex);
   }
 
@@ -1096,6 +1095,9 @@ void preprocess_resize(int new_x_size, int new_y_size,
     }
 
     TRACE_LOG("Found interpreter_finished_processing_winch_cond.\n");
+    mean_thread_is_waiting_for_interpreter_screen_update = false;
+
+    process_resize2();
     do_update_screen();
 
     SDL_UnlockMutex(interpreter_finished_processing_winch_mutex);
@@ -1108,6 +1110,7 @@ int sdl_event_filter(void * userdata, SDL_Event *event) {
   if ( (event->type == SDL_WINDOWEVENT)
       && (event->window.event == SDL_WINDOWEVENT_RESIZED) ) {
     TRACE_LOG("resize found in filter function.\n");
+
     preprocess_resize(event->window.data1, event->window.data2, true);
     return 0;
   }
@@ -1619,6 +1622,10 @@ int main(int argc, char *argv[]) {
           SDL_LockMutex(sdl_main_thread_working_mutex);
 
           if (main_thread_should_update_screen == true) {
+            if (interpreter_is_processing_winch == true) {
+              process_resize2();
+              interpreter_is_processing_winch = false;
+            }
             do_update_screen();
             main_thread_should_update_screen = false;
           }
