@@ -463,6 +463,9 @@ static void print_startup_syntax() {
 
 
 static int parse_config_parameter(char *key, char *value) {
+  long long_value;
+  char *endptr;
+
   if (strcasecmp(key, "process-sdl2-events") == 0) {
     if (strcasecmp(value, sdl2_event_processing_queue_option_name) == 0) {
       resize_via_event_filter = false;
@@ -475,6 +478,20 @@ static int parse_config_parameter(char *key, char *value) {
     else {
       return -1;
     }
+  }
+  else if ( (strcasecmp(key, "window-width") == 0)
+      || (strcasecmp(key, "window-height") == 0) ) {
+    if ( (value == NULL) || (strlen(value) == 0) )
+      return -1;
+    long_value = strtol(value, &endptr, 10);
+    free(value);
+    if (*endptr != 0)
+      return -1;
+    if (strcasecmp(key, "window-width") == 0)
+      unscaled_sdl2_interface_screen_width_in_pixels = long_value;
+    else
+      unscaled_sdl2_interface_screen_height_in_pixels = long_value;
+    return 0;
   }
   else {
     return -2;
