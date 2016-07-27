@@ -209,7 +209,8 @@ static bool do_expose = false;
 static int frontispiece_resource_number;
 static char* story_title;
 
-static bool mean_thread_is_waiting_for_interpreter_screen_update = false;
+static bool main_thread_is_waiting_for_interpreter_screen_update = false;
+static bool interpreter_history_was_remeasured = false;
 
 // handle SQL_Quit?
 
@@ -717,11 +718,10 @@ static void process_resize2() {
 }
 
 
-
 void update_screen() {
   TRACE_LOG("Doing update_screen().\n");
 
-  if (mean_thread_is_waiting_for_interpreter_screen_update == true) {
+  if (main_thread_is_waiting_for_interpreter_screen_update == true) {
     SDL_LockMutex(interpreter_finished_processing_winch_mutex);
     interpreter_finished_processing_winch = true;
     SDL_CondSignal(interpreter_finished_processing_winch_cond);
@@ -909,11 +909,38 @@ static Uint32 timeout_callback(Uint32 interval, void *UNUSED(param)) {
 }
 
 
+void do_update_screen() {
+  TRACE_LOG("locking sdl_backup_surface_mutex...\n");
+  SDL_LockMutex(sdl_backup_surface_mutex);
+  TRACE_LOG("sdl_backup_surface_mutex locked\n");
+
+  TRACE_LOG("Main thread updating screen.\n");
+  SDL_BlitSurface(Surf_Display, NULL, Surf_Backup, NULL);
+  SDL_UpdateTexture(
+      sdlTexture,
+      NULL,
+      Surf_Display->pixels,
+      Surf_Display->pitch);
+  SDL_RenderClear(sdl_renderer);
+  SDL_RenderCopy(sdl_renderer, sdlTexture, NULL, NULL);
+  SDL_RenderPresent(sdl_renderer);
+
+  SDL_UnlockMutex(sdl_backup_surface_mutex);
+}
+
+
 static int get_next_event(z_ucs *z_ucs_input, int timeout_millis,
-    bool poll_only) {
+    bool poll_only, bool history_finished_remeasuring) {
   int wait_result, result = -1;
 
   TRACE_LOG("Invoked get_next_event.\n");
+
+  if (history_finished_remeasuring == true) {
+    SDL_LockMutex(sdl_main_thread_working_mutex);
+    main_thread_work_complete = false;
+    interpreter_history_was_remeasured = true;
+    SDL_UnlockMutex(sdl_main_thread_working_mutex);
+  }
 
   if (timeout_millis > 0) {
     TRACE_LOG("input timeout: %d ms.\n", timeout_millis);
@@ -1053,26 +1080,6 @@ static int interpreter_thread_function(void *UNUSED(ptr)) {
 }
 
 
-void do_update_screen() {
-  TRACE_LOG("locking sdl_backup_surface_mutex...\n");
-  SDL_LockMutex(sdl_backup_surface_mutex);
-  TRACE_LOG("sdl_backup_surface_mutex locked\n");
-
-  TRACE_LOG("Main thread updating screen.\n");
-  SDL_BlitSurface(Surf_Display, NULL, Surf_Backup, NULL);
-  SDL_UpdateTexture(
-      sdlTexture,
-      NULL,
-      Surf_Display->pixels,
-      Surf_Display->pitch);
-  SDL_RenderClear(sdl_renderer);
-  SDL_RenderCopy(sdl_renderer, sdlTexture, NULL, NULL);
-  SDL_RenderPresent(sdl_renderer);
-
-  SDL_UnlockMutex(sdl_backup_surface_mutex);
-}
-
-
 void preprocess_resize(int new_x_size, int new_y_size,
     bool wait_for_interpreter_processing) {
 
@@ -1091,7 +1098,7 @@ void preprocess_resize(int new_x_size, int new_y_size,
   resize_event_pending = true;
 
   if (wait_for_interpreter_processing) {
-  mean_thread_is_waiting_for_interpreter_screen_update = true;
+    main_thread_is_waiting_for_interpreter_screen_update = true;
     SDL_LockMutex(interpreter_finished_processing_winch_mutex);
   }
 
@@ -1112,7 +1119,7 @@ void preprocess_resize(int new_x_size, int new_y_size,
     }
 
     TRACE_LOG("Found interpreter_finished_processing_winch_cond.\n");
-    mean_thread_is_waiting_for_interpreter_screen_update = false;
+    main_thread_is_waiting_for_interpreter_screen_update = false;
 
     process_resize2();
     do_update_screen();
@@ -1637,6 +1644,11 @@ int main(int argc, char *argv[]) {
         if (main_thread_work_complete == false) {
           TRACE_LOG("Found some work to do.\n");
           SDL_LockMutex(sdl_main_thread_working_mutex);
+
+          if (interpreter_history_was_remeasured == true) {
+            interpreter_history_was_remeasured = false;
+            do_update_screen();
+          }
 
           if (main_thread_should_update_screen == true) {
             if (interpreter_is_processing_winch == true) {
