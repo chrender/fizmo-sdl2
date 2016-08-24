@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <changelog>
+  <change version="0.7.1">
+    <logentry>Use tiny-xml-doc-tools for documentation.</logentry>
+  </change>
+
   <change version="0.7.0">
     <datetime day-of-week="Thu" month="7" day="28" hour="20"
       minute="25" second="11" timezone="CEST" year="2016"/>

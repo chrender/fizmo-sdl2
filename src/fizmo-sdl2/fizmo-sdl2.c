@@ -125,7 +125,7 @@
 
 #include "../locales/fizmo_sdl2_locales.h"
 
-#define FIZMO_SDL_VERSION "0.7.0"
+#define FIZMO_SDL_VERSION "0.7.1"
 
 #define SDL_OUTPUT_CHAR_BUF_SIZE 80
 #define MINIMUM_X_WINDOW_SIZE 200
