@@ -259,11 +259,6 @@ static void print_startup_syntax() {
       i18n_sdl2_LIBPIXELINTERFACE_VERSION_P0S,
       get_screen_pixel_interface_version());
   streams_latin1_output("\n");
-  i18n_translate(
-      fizmo_sdl2_module_name,
-      i18n_sdl2_LIBFIZMO_VERSION_P0S,
-      FIZMO_VERSION);
-  streams_latin1_output("\n");
   if (active_sound_interface != NULL) {
     streams_latin1_output(active_sound_interface->get_interface_name());
     streams_latin1_output(" ");
