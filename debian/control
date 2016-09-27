@@ -22,6 +22,8 @@ Depends: libfizmo-common,
  libdrilbo-common,
  ${misc:Depends},
  ${shlibs:Depends}
+Provides: fizmo,
+ zcode-interpreter
 Description: SDL2-based Z-machine interpreter for Infocom/Inform games
  This is a SDL2-based Z-Machine interpreter. It is used to play old Infocom
  text adventures (except version 6) and modern interactive fiction as

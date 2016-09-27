@@ -1,0 +1,21 @@
+#! /bin/sh
+# prerm script for fizmo-sdl2
+
+set -e
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        update-alternatives --remove zcode-interpreter /usr/games/fizmo-sdl2-launcher
+        ;;
+    failed-upgrade)
+        update-alternatives --remove zcode-interpreter /usr/games/fizmo-sdl2-launcher
+        ;;
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 0
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0
