@@ -43,7 +43,7 @@ AC_ARG_ENABLE([tracing],
 
 AC_INIT(
  [fizmo-sdl2],
- [0.7.1],
+ [0.8.4],
  fizmo@spellbreaker.org,
  fizmo-sdl2)
 
@@ -52,10 +52,9 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CC
 AC_PROG_RANLIB
 
-PKG_CHECK_MODULES([libfizmo], [libfizmo >= 0.7.10])
-PKG_CHECK_MODULES([libpixelif], [libpixelif >= 0.7.0])
-PKG_CHECK_MODULES([libsndifsdl2], [libsndifsdl2 >= 0.8.0])
-#PKG_CHECK_MODULES([libdrilbo], [libdrilbo >= 0.2.3])
+PKG_CHECK_MODULES([libfizmo], [libfizmo >= 0.7.13])
+PKG_CHECK_MODULES([libpixelif], [libpixelif >= 0.7.2])
+PKG_CHECK_MODULES([libsndifsdl2], [libsndifsdl2 >= 0.8.2])
 m4_include(config-libs.m4)
 
 AM_CONDITIONAL([ENABLE_TRACING],
