@@ -1,6 +1,6 @@
 fizmo-sdl2 (0.8.4-1) experimental; urgency=low
 
-  * Initial release.
+  * Initial release (Closes: #842698).
 
- -- Christoph Ender <christoph.ender@spellbreaker.org>  Sun, 9 Oct 2016 12:25:00 +0200 
+ -- Christoph Ender <christoph.ender@spellbreaker.org>  Mon, 31 Oct 2016 23:20:00 +1200 
 
