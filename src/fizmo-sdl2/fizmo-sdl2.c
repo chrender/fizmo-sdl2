@@ -247,6 +247,11 @@ static void print_startup_syntax() {
   int i;
   char **available_locales = get_available_locale_names();
 
+  if (available_locales == NULL) {
+    streams_latin1_output("Could not find any installed locales.\n");
+    exit(EXIT_FAILURE);
+  }
+
   streams_latin1_output("\n");
   i18n_translate(
       fizmo_sdl2_module_name,
