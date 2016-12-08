@@ -8,6 +8,10 @@
    follows in this pattern. The new version number should also avoid some
    confusion for all packaging which is based on the modules instead of the
    whole distribution.
+ - Fixed SDL2-event evaluation on startup. This fixes a bug that made the
+   interpreter crash when your initial screen size was less than the default
+   size. This fix does now also allow resizing the window during frontispiece
+   display.
  - Adapted to split-library build.
 
    Version 0.7.1
