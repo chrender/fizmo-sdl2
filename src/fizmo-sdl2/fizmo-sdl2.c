@@ -177,27 +177,28 @@ static bool sdl_event_evluation_should_stop = false;
 
 static SDL_mutex *sdl_main_thread_working_mutex;
 static SDL_mutex *sdl_backup_surface_mutex;
+static SDL_cond *update_screen_wait_cond;
 static SDL_cond *sdl_main_thread_working_cond;
 static bool main_thread_work_complete = true;
 static bool main_thread_should_update_screen = false;
-static bool main_thread_should_expose_screen = false;
+//static bool main_thread_should_expose_screen = false;
 static bool main_thread_should_set_title = false;
 
 static z_file *story_stream = NULL;
 static z_file *blorb_stream = NULL;
 static z_file *savegame_to_restore= NULL;
 
-// 1: Detection of resize event, notification for interpreter thread. Wait for
-//    interpreter to finished processing.
+// This mutex is used to manage access to the "resize_event_pending"
+// variable:
 static SDL_mutex *resize_event_pending_mutex = NULL;
 static bool resize_event_pending = false;
-//static bool wait_for_interpreter_when_resizing = false;
+
 
 // 2: Interpreter thread received resize notifiction and is processing it:
 static bool interpreter_is_processing_winch = false;
 
 // 3: Interpreter has finished processing
-static SDL_mutex *interpreter_finished_processing_winch_mutex = NULL;
+//static SDL_mutex *interpreter_finished_processing_winch_mutex = NULL;
 // Once this cond is set, the main thread will refresh the screen.
 static SDL_cond *interpreter_finished_processing_winch_cond = NULL;
 static bool interpreter_finished_processing_winch = false;
@@ -205,11 +206,13 @@ static bool interpreter_finished_processing_winch = false;
 static int resize_event_new_x_size;
 static int resize_event_new_y_size;
 
-static bool do_expose = false;
+//static bool do_expose = false;
 static int frontispiece_resource_number;
 static char* story_title;
 
-static bool main_thread_is_waiting_for_interpreter_screen_update = false;
+//static SDL_mutex *filter_mutex;
+static bool filter_is_waiting_for_interpreter_screen_update = false;
+
 static bool interpreter_history_was_remeasured = false;
 
 // handle SQL_Quit?
@@ -243,6 +246,11 @@ static bool is_colour_available() {
 static void print_startup_syntax() {
   int i;
   char **available_locales = get_available_locale_names();
+
+  if (available_locales == NULL) {
+    streams_latin1_output("Could not find any installed locales.\n");
+    exit(EXIT_FAILURE);
+  }
 
   streams_latin1_output("\n");
   i18n_translate(
@@ -671,7 +679,7 @@ static double get_device_to_pixel_ratio() {
 static void process_resize2() {
   SDL_LockMutex(sdl_backup_surface_mutex);
 
-  TRACE_LOG("%d / %d\n",
+  TRACE_LOG("process_resize2: %d / %d\n",
       unscaled_sdl2_interface_screen_width_in_pixels,
       unscaled_sdl2_interface_screen_height_in_pixels);
 
@@ -716,13 +724,85 @@ static void process_resize2() {
 void update_screen() {
   TRACE_LOG("Doing update_screen().\n");
 
-  if (main_thread_is_waiting_for_interpreter_screen_update == true) {
-    SDL_LockMutex(interpreter_finished_processing_winch_mutex);
+  // This thread is executed in the interpreter's context. This means
+  // we have to notify the main sdl thread that we want the screen
+  // updated.
+  //
+  // There are two ways this can be handeled: In the unfiltered processing
+  // method this is always done by the main event loop. In case we're
+  // using the filtered approach, it is also possible that the main
+  // thread is hanging in the "sdl_event_filter" method, outside the
+  // regular event loop. In this case, the screen update has to be done
+  // by ths method, since the main event loop is blocked in this kind
+  // of SDL implementation (which generally means Mac OS X).
+
+  TRACE_LOG("Waiting for sdl_main_thread_working_mutex.\n");
+  SDL_LockMutex(sdl_main_thread_working_mutex);
+  TRACE_LOG("Locked sdl_main_thread_working_mutex.\n");
+
+  TRACE_LOG("filter_is_waiting_for_interpreter_screen_update: %d\n",
+      filter_is_waiting_for_interpreter_screen_update);
+
+  if (filter_is_waiting_for_interpreter_screen_update == true) {
+    // In case the resize thread is already waiting for an update, we
+    // can notify it right away, wait till it is done updating the screen,
+    // which we know is done then the resize thread releases the
+    // "interpreter_finished_processing_winch_mutex" mutex, and are done.
+    interpreter_finished_processing_winch = true;
+    SDL_CondSignal(interpreter_finished_processing_winch_cond);
+    //SDL_UnlockMutex(filter_mutex);
+  }
+  else {
+    // In case the resize thread is not -- or not yet -- waiting for an
+    // update, we'll set the flags in a way that tells the main thread
+    // that we need an update.
+    //SDL_UnlockMutex(interpreter_finished_processing_winch_mutex);
+
+    main_thread_should_update_screen = true;
+    main_thread_work_complete = false;
+    while ( (main_thread_should_update_screen == false)
+        && (filter_is_waiting_for_interpreter_screen_update == false) ) {
+      TRACE_LOG("Waiting for update_screen_wait_cond ...\n");
+      SDL_CondWait(update_screen_wait_cond, sdl_main_thread_working_mutex);
+      TRACE_LOG("Found for update_screen_wait_cond.\n");
+    }
+
+    if (filter_is_waiting_for_interpreter_screen_update == true) {
+      //main_thread_should_update_screen = false;
+      SDL_CondSignal(interpreter_finished_processing_winch_cond);
+      interpreter_is_processing_winch = false;
+    }
+
+    // No matter whether the main event loop or the filter thread
+    // have sent a signal to "update_screen_wait_cond", we know that
+    // the screen is up to date and we can return.
+
+  }
+
+  SDL_UnlockMutex(sdl_main_thread_working_mutex);
+
+  TRACE_LOG("Finished update_screen().\n");
+
+
+
+
+
+  /*
+  SDL_LockMutex(interpreter_finished_processing_winch_mutex);
+  TRACE_LOG("resize_thread_is_waiting_for_interpreter_screen_update: %d\n",
+      resize_thread_is_waiting_for_interpreter_screen_update);
+
+  if (resize_thread_is_waiting_for_interpreter_screen_update == true) {
+    // At this point we're only telling the main thread that we
+    // wish to update the screen. it is currently waiting for this
+    // due to a resize and will redraw the screen by itself in the
+    // fiter function.
     interpreter_finished_processing_winch = true;
     SDL_CondSignal(interpreter_finished_processing_winch_cond);
     SDL_UnlockMutex(interpreter_finished_processing_winch_mutex);
   }
   else {
+    SDL_UnlockMutex(interpreter_finished_processing_winch_mutex);
     // This has to be done by the main thread.
     TRACE_LOG("Waiting for sdl_main_thread_working_mutex.\n");
     SDL_LockMutex(sdl_main_thread_working_mutex);
@@ -731,13 +811,22 @@ void update_screen() {
     main_thread_work_complete = false;
     while (main_thread_work_complete == false) {
       TRACE_LOG("Waiting for sdl_main_thread_working_cond ...\n");
-      SDL_CondWait(sdl_main_thread_working_cond, sdl_main_thread_working_mutex);
+      SDL_CondWait(update_screen_wait_cond, sdl_main_thread_working_mutex);
+      TRACE_LOG("FOund update_screen_wait_cond\n");
+      if (resize_thread_is_waiting_for_interpreter_screen_update == true) {
+        SDL_LockMutex(interpreter_finished_processing_winch_mutex);
+        interpreter_finished_processing_winch = true;
+        SDL_CondSignal(interpreter_finished_processing_winch_cond);
+        SDL_UnlockMutex(interpreter_finished_processing_winch_mutex);
+        break;
+      }
+      //SDL_CondWait(sdl_main_thread_working_cond,
+      //    sdl_main_thread_working_mutex);
     }
     TRACE_LOG("Found sdl_main_thread_working_cond.\n");
     SDL_UnlockMutex(sdl_main_thread_working_mutex);
   }
-
-  TRACE_LOG("Finished update_screen().\n");
+  */
 }
 
 
@@ -754,7 +843,8 @@ static void process_resize1() {
     = unscaled_sdl2_interface_screen_height_in_pixels
     * sdl2_device_to_pixel_ratio;
 
-  TRACE_LOG("%d x %d\n", unscaled_sdl2_interface_screen_width_in_pixels,
+  TRACE_LOG("resize1: unscaled size: %d x %d\n",
+      unscaled_sdl2_interface_screen_width_in_pixels,
       unscaled_sdl2_interface_screen_height_in_pixels);
 
   SDL_FreeSurface(Surf_Display);
@@ -810,45 +900,22 @@ static int pull_sdl_event_from_queue(int *event_type, z_ucs *z_ucs_input) {
   SDL_LockMutex(resize_event_pending_mutex);
   if (resize_event_pending == true) {
     TRACE_LOG("Gotta resize.\n");
-    //wait_for_terp = wait_for_interpreter_when_resizing;
     resize_event_has_to_be_processed = true;
     resize_event_pending = false;
   }
   SDL_UnlockMutex(resize_event_pending_mutex);
 
-  if (do_expose == true) {
-    if ( (resize_event_pending == false)
-        && (interpreter_is_processing_winch == false) ) {
-      if (does_resize_event_exist() == false) {
-        TRACE_LOG("Waiting for sdl_main_thread_working_mutex.\n");
-        SDL_LockMutex(sdl_main_thread_working_mutex);
-        TRACE_LOG("Locked sdl_main_thread_working_mutex.\n");
-        main_thread_should_expose_screen = true;
-        main_thread_work_complete = false;
-        while (main_thread_work_complete == false) {
-          TRACE_LOG("Waiting for sdl_main_thread_working_cond ...\n");
-          SDL_CondWait(
-              sdl_main_thread_working_cond, sdl_main_thread_working_mutex);
-        }
-        TRACE_LOG("Found sdl_main_thread_working_cond.\n");
-        SDL_UnlockMutex(sdl_main_thread_working_mutex);
-      }
-    }
-    do_expose = false;
-  }
-
   if (resize_event_has_to_be_processed == true) {
     process_resize1();
     *event_type = EVENT_WAS_WINCH;
-    //if (wait_for_terp == true) {
-    //  TRACE_LOG("WAITING.\n");
-      interpreter_is_processing_winch = true;
-    //}
+    interpreter_is_processing_winch = true;
+    TRACE_LOG("interpreter_is_processing_winch = true\n");
     *z_ucs_input = 0;
     result = 0;
   }
   else {
-    // In case we don't have to process resizing events we check the event queue.
+    // In case we don't have to process resizing events we check the event
+    // queue.
 
     SDL_LockMutex(sdl_event_queue_mutex);
 
@@ -1075,9 +1142,8 @@ static int interpreter_thread_function(void *UNUSED(ptr)) {
 }
 
 
-void preprocess_resize(int new_x_size, int new_y_size,
-    bool wait_for_interpreter_processing) {
-
+void preprocess_nonfiltered_resize(int new_x_size, int new_y_size) {
+  TRACE_LOG("Starting nonfiltered preprocess_resize.\n");
   SDL_LockMutex(resize_event_pending_mutex);
 
   resize_event_new_x_size
@@ -1092,35 +1158,8 @@ void preprocess_resize(int new_x_size, int new_y_size,
 
   resize_event_pending = true;
 
-  if (wait_for_interpreter_processing) {
-    main_thread_is_waiting_for_interpreter_screen_update = true;
-    SDL_LockMutex(interpreter_finished_processing_winch_mutex);
-  }
-
   SDL_UnlockMutex(resize_event_pending_mutex);
-
-  if (wait_for_interpreter_processing) {
-    // Wait for the main thread to process the resize event. We have to do
-    // this since polling the event queue in SDL's Mac OS X implementation
-    // blocks the SDL input queue we would never have the chance to repaint
-    // the screen in a regular way.
-
-    TRACE_LOG("Waiting for interpreter_finished_processing_winch_cond ...\n");
-    interpreter_finished_processing_winch = false;
-    while (interpreter_finished_processing_winch == false) {
-      SDL_CondWait(
-          interpreter_finished_processing_winch_cond,
-          interpreter_finished_processing_winch_mutex);
-    }
-
-    TRACE_LOG("Found interpreter_finished_processing_winch_cond.\n");
-    main_thread_is_waiting_for_interpreter_screen_update = false;
-
-    process_resize2();
-    do_update_screen();
-
-    SDL_UnlockMutex(interpreter_finished_processing_winch_mutex);
-  }
+  TRACE_LOG("Finished pnonfiltered reprocess_resize.\n");
 }
 
 
@@ -1130,7 +1169,52 @@ int sdl_event_filter(void * userdata, SDL_Event *event) {
       && (event->window.event == SDL_WINDOWEVENT_RESIZED) ) {
     TRACE_LOG("resize found in filter function.\n");
 
-    preprocess_resize(event->window.data1, event->window.data2, true);
+    // Since this function appears to be running in it's own thread
+    // and we're updating the screen, we need to get a lock on the
+    // main loop's mutex to avoid collisions:
+    SDL_LockMutex(sdl_main_thread_working_mutex);
+
+    SDL_LockMutex(resize_event_pending_mutex);
+
+    resize_event_new_x_size
+      = event->window.data1 < MINIMUM_X_WINDOW_SIZE
+      ? MINIMUM_X_WINDOW_SIZE
+      : event->window.data1 ;
+
+    resize_event_new_y_size
+      = event->window.data2 < MINIMUM_Y_WINDOW_SIZE
+      ? MINIMUM_Y_WINDOW_SIZE
+      : event->window.data2;
+
+    resize_event_pending = true;
+    SDL_UnlockMutex(resize_event_pending_mutex);
+
+    //SDL_LockMutex(filter_mutex);
+    filter_is_waiting_for_interpreter_screen_update = true;
+    interpreter_finished_processing_winch = false;
+
+    // In case the interpreter thread is already waiting in the
+    // "do_update" function for a screen update, we'll wake it
+    // up.
+    SDL_CondSignal(update_screen_wait_cond);
+
+    TRACE_LOG("Waiting for interpreter_finished_processing_winch_cond ...\n");
+    while (interpreter_finished_processing_winch == false) {
+      SDL_CondWait(
+          interpreter_finished_processing_winch_cond,
+          sdl_main_thread_working_mutex);
+    }
+
+    process_resize2();
+    do_update_screen();
+
+    filter_is_waiting_for_interpreter_screen_update = false;
+
+    //SDL_UnlockMutex(interpreter_finished_processing_winch_mutex);
+
+    SDL_UnlockMutex(sdl_main_thread_working_mutex);
+
+    TRACE_LOG("Finished processing filetered resize.\n");
     return 0;
   }
   else {
@@ -1180,6 +1264,7 @@ int main(int argc, char *argv[]) {
   z_ucs z_ucs_input;
   const Uint8 *state;
   int thread_status;
+  bool screen_was_updated;
 
 #ifdef ENABLE_TRACING
   turn_on_trace();
@@ -1535,12 +1620,14 @@ int main(int argc, char *argv[]) {
       atexit(SDL_Quit);
 
       sdl_event_queue_mutex = SDL_CreateMutex();
+      //filter_mutex = SDL_CreateMutex();
       sdl_main_thread_working_mutex = SDL_CreateMutex();
       sdl_backup_surface_mutex = SDL_CreateMutex();
       resize_event_pending_mutex = SDL_CreateMutex();
-      interpreter_finished_processing_winch_mutex = SDL_CreateMutex();
+      //interpreter_finished_processing_winch_mutex = SDL_CreateMutex();
 
       sdl_main_thread_working_cond = SDL_CreateCond();
+      update_screen_wait_cond = SDL_CreateCond();
       interpreter_finished_processing_winch_cond = SDL_CreateCond();
 
       if ((sdl_window = SDL_CreateWindow("fizmo-sdl2",
@@ -1637,6 +1724,7 @@ int main(int argc, char *argv[]) {
       do {
 
         if (main_thread_work_complete == false) {
+          screen_was_updated = false;
           TRACE_LOG("Found some work to do.\n");
           SDL_LockMutex(sdl_main_thread_working_mutex);
 
@@ -1654,6 +1742,7 @@ int main(int argc, char *argv[]) {
             main_thread_should_update_screen = false;
           }
 
+          /*
           if (main_thread_should_expose_screen == true) {
             SDL_LockMutex(sdl_backup_surface_mutex);
 
@@ -1669,6 +1758,7 @@ int main(int argc, char *argv[]) {
 
             SDL_UnlockMutex(sdl_backup_surface_mutex);
           }
+          */
 
           if (main_thread_should_set_title == true) {
             set_title_and_icon();
@@ -1678,6 +1768,9 @@ int main(int argc, char *argv[]) {
           main_thread_work_complete = true;
           TRACE_LOG("Main thread work complete.\n");
           SDL_CondSignal(sdl_main_thread_working_cond);
+          if (screen_was_updated == true) {
+            SDL_CondSignal(update_screen_wait_cond);
+          }
           SDL_UnlockMutex(sdl_main_thread_working_mutex);
           TRACE_LOG("Continuing event loop.\n");
         }
@@ -1752,15 +1845,16 @@ int main(int argc, char *argv[]) {
             TRACE_LOG("Found SDL_WINDOWEVENT: %d.\n", Event.window.event);
 
             if (Event.window.event == SDL_WINDOWEVENT_EXPOSED) {
-              TRACE_LOG("Found SDL_WINDOWEVENT_EXPOSED.\n");
-              if ( (resize_event_pending == false)
-                  && (interpreter_is_processing_winch == false) ) {
-                if (does_resize_event_exist() == false) {
+              if (resize_via_event_filter == false) {
+                TRACE_LOG("Found SDL_WINDOWEVENT_EXPOSED.\n");
+                if ( (resize_event_pending == false)
+                    && (interpreter_is_processing_winch == false) ) {
+                  if (does_resize_event_exist() == false) {
 
-                  preprocess_resize(
-                      unscaled_sdl2_interface_screen_width_in_pixels,
-                      unscaled_sdl2_interface_screen_height_in_pixels,
-                      false);
+                    preprocess_nonfiltered_resize(
+                        unscaled_sdl2_interface_screen_width_in_pixels,
+                        unscaled_sdl2_interface_screen_height_in_pixels);
+                  }
                 }
               }
             }
@@ -1768,10 +1862,9 @@ int main(int argc, char *argv[]) {
                 && (Event.window.event == SDL_WINDOWEVENT_RESIZED) ) {
               TRACE_LOG("Found SDL_WINDOWEVENT_RESIZED.\n");
 
-              preprocess_resize(
+              preprocess_nonfiltered_resize(
                   Event.window.data1,
-                  Event.window.data2,
-                  false);
+                  Event.window.data2);
             }
           }
         }
@@ -1792,7 +1885,7 @@ int main(int argc, char *argv[]) {
       SDL_DestroyCond(interpreter_finished_processing_winch_cond);
       SDL_DestroyCond(sdl_main_thread_working_cond);
 
-      SDL_DestroyMutex(interpreter_finished_processing_winch_mutex);
+      //SDL_DestroyMutex(interpreter_finished_processing_winch_mutex);
       SDL_DestroyMutex(resize_event_pending_mutex);
       SDL_DestroyMutex(sdl_backup_surface_mutex);
       SDL_DestroyMutex(sdl_main_thread_working_mutex);
