@@ -18,7 +18,7 @@
 #
 # This file is part of fizmo.
 #
-# Copyright (c) 2009-2016 Christoph Ender.
+# Copyright (c) 2009-2017 Christoph Ender.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -271,6 +271,8 @@ install_sh = @install_sh@
 libcellif_CFLAGS = @libcellif_CFLAGS@
 libcellif_LIBS = @libcellif_LIBS@
 libdir = @libdir@
+libdrilbo_CFLAGS = @libdrilbo_CFLAGS@
+libdrilbo_LIBS = @libdrilbo_LIBS@
 libexecdir = @libexecdir@
 libfizmo_CFLAGS = @libfizmo_CFLAGS@
 libfizmo_LIBS = @libfizmo_LIBS@
@@ -287,7 +289,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sdl2_CFLAGS = @sdl2_CFLAGS@
 sdl2_LIBS = @sdl2_LIBS@

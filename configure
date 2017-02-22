@@ -602,6 +602,8 @@ libsndifsdl2_LIBS
 libsndifsdl2_CFLAGS
 libpixelif_LIBS
 libpixelif_CFLAGS
+libdrilbo_LIBS
+libdrilbo_CFLAGS
 libfizmo_LIBS
 libfizmo_CFLAGS
 PKG_CONFIG_LIBDIR
@@ -671,7 +673,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -711,6 +712,8 @@ PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
 libfizmo_CFLAGS
 libfizmo_LIBS
+libdrilbo_CFLAGS
+libdrilbo_LIBS
 libpixelif_CFLAGS
 libpixelif_LIBS
 libsndifsdl2_CFLAGS
@@ -755,7 +758,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1008,15 +1010,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1154,7 +1147,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1307,7 +1300,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1367,6 +1359,10 @@ Some influential environment variables:
               C compiler flags for libfizmo, overriding pkg-config
   libfizmo_LIBS
               linker flags for libfizmo, overriding pkg-config
+  libdrilbo_CFLAGS
+              C compiler flags for libdrilbo, overriding pkg-config
+  libdrilbo_LIBS
+              linker flags for libdrilbo, overriding pkg-config
   libpixelif_CFLAGS
               C compiler flags for libpixelif, overriding pkg-config
   libpixelif_LIBS
@@ -3717,12 +3713,12 @@ if test -n "$libfizmo_CFLAGS"; then
     pkg_cv_libfizmo_CFLAGS="$libfizmo_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libfizmo >= 0.7.13\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libfizmo >= 0.7.13") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libfizmo >= 0.7.14\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libfizmo >= 0.7.14") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_libfizmo_CFLAGS=`$PKG_CONFIG --cflags "libfizmo >= 0.7.13" 2>/dev/null`
+  pkg_cv_libfizmo_CFLAGS=`$PKG_CONFIG --cflags "libfizmo >= 0.7.14" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -3734,12 +3730,12 @@ if test -n "$libfizmo_LIBS"; then
     pkg_cv_libfizmo_LIBS="$libfizmo_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libfizmo >= 0.7.13\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libfizmo >= 0.7.13") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libfizmo >= 0.7.14\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libfizmo >= 0.7.14") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_libfizmo_LIBS=`$PKG_CONFIG --libs "libfizmo >= 0.7.13" 2>/dev/null`
+  pkg_cv_libfizmo_LIBS=`$PKG_CONFIG --libs "libfizmo >= 0.7.14" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -3760,14 +3756,14 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        libfizmo_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libfizmo >= 0.7.13" 2>&1`
+	        libfizmo_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libfizmo >= 0.7.14" 2>&1`
         else
-	        libfizmo_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libfizmo >= 0.7.13" 2>&1`
+	        libfizmo_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libfizmo >= 0.7.14" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$libfizmo_PKG_ERRORS" >&5
 
-	as_fn_error $? "Package requirements (libfizmo >= 0.7.13) were not met:
+	as_fn_error $? "Package requirements (libfizmo >= 0.7.14) were not met:
 
 $libfizmo_PKG_ERRORS
 
@@ -3801,19 +3797,19 @@ $as_echo "yes" >&6; }
 fi
 
 pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libpixelif" >&5
-$as_echo_n "checking for libpixelif... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libdrilbo" >&5
+$as_echo_n "checking for libdrilbo... " >&6; }
 
-if test -n "$libpixelif_CFLAGS"; then
-    pkg_cv_libpixelif_CFLAGS="$libpixelif_CFLAGS"
+if test -n "$libdrilbo_CFLAGS"; then
+    pkg_cv_libdrilbo_CFLAGS="$libdrilbo_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libpixelif >= 0.7.2\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libpixelif >= 0.7.2") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libdrilbo >= 0.2.10\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libdrilbo >= 0.2.10") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_libpixelif_CFLAGS=`$PKG_CONFIG --cflags "libpixelif >= 0.7.2" 2>/dev/null`
+  pkg_cv_libdrilbo_CFLAGS=`$PKG_CONFIG --cflags "libdrilbo >= 0.2.10" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -3821,16 +3817,16 @@ fi
  else
     pkg_failed=untried
 fi
-if test -n "$libpixelif_LIBS"; then
-    pkg_cv_libpixelif_LIBS="$libpixelif_LIBS"
+if test -n "$libdrilbo_LIBS"; then
+    pkg_cv_libdrilbo_LIBS="$libdrilbo_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libpixelif >= 0.7.2\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libpixelif >= 0.7.2") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libdrilbo >= 0.2.10\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libdrilbo >= 0.2.10") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_libpixelif_LIBS=`$PKG_CONFIG --libs "libpixelif >= 0.7.2" 2>/dev/null`
+  pkg_cv_libdrilbo_LIBS=`$PKG_CONFIG --libs "libdrilbo >= 0.2.10" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -3851,14 +3847,105 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        libpixelif_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libpixelif >= 0.7.2" 2>&1`
+	        libdrilbo_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libdrilbo >= 0.2.10" 2>&1`
         else
-	        libpixelif_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libpixelif >= 0.7.2" 2>&1`
+	        libdrilbo_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libdrilbo >= 0.2.10" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$libdrilbo_PKG_ERRORS" >&5
+
+	as_fn_error $? "Package requirements (libdrilbo >= 0.2.10) were not met:
+
+$libdrilbo_PKG_ERRORS
+
+Consider adjusting the PKG_CONFIG_PATH environment variable if you
+installed software in a non-standard prefix.
+
+Alternatively, you may set the environment variables libdrilbo_CFLAGS
+and libdrilbo_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details." "$LINENO" 5
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
+is in your PATH or set the PKG_CONFIG environment variable to the full
+path to pkg-config.
+
+Alternatively, you may set the environment variables libdrilbo_CFLAGS
+and libdrilbo_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+
+To get pkg-config, see <http://pkg-config.freedesktop.org/>.
+See \`config.log' for more details" "$LINENO" 5; }
+else
+	libdrilbo_CFLAGS=$pkg_cv_libdrilbo_CFLAGS
+	libdrilbo_LIBS=$pkg_cv_libdrilbo_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+fi
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libpixelif" >&5
+$as_echo_n "checking for libpixelif... " >&6; }
+
+if test -n "$libpixelif_CFLAGS"; then
+    pkg_cv_libpixelif_CFLAGS="$libpixelif_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libpixelif >= 0.8.3\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libpixelif >= 0.8.3") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_libpixelif_CFLAGS=`$PKG_CONFIG --cflags "libpixelif >= 0.8.3" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$libpixelif_LIBS"; then
+    pkg_cv_libpixelif_LIBS="$libpixelif_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libpixelif >= 0.8.3\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libpixelif >= 0.8.3") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_libpixelif_LIBS=`$PKG_CONFIG --libs "libpixelif >= 0.8.3" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        libpixelif_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libpixelif >= 0.8.3" 2>&1`
+        else
+	        libpixelif_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libpixelif >= 0.8.3" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$libpixelif_PKG_ERRORS" >&5
 
-	as_fn_error $? "Package requirements (libpixelif >= 0.7.2) were not met:
+	as_fn_error $? "Package requirements (libpixelif >= 0.8.3) were not met:
 
 $libpixelif_PKG_ERRORS
 
