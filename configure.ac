@@ -3,7 +3,7 @@
 #
 # This file is part of fizmo.
 #
-# Copyright (c) 2009-2016 Christoph Ender.
+# Copyright (c) 2009-2017 Christoph Ender.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -52,8 +52,9 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CC
 AC_PROG_RANLIB
 
-PKG_CHECK_MODULES([libfizmo], [libfizmo >= 0.7.13])
-PKG_CHECK_MODULES([libpixelif], [libpixelif >= 0.7.2])
+PKG_CHECK_MODULES([libfizmo], [libfizmo >= 0.7.14])
+PKG_CHECK_MODULES([libdrilbo], [libdrilbo >= 0.2.10])
+PKG_CHECK_MODULES([libpixelif], [libpixelif >= 0.8.3])
 PKG_CHECK_MODULES([libsndifsdl2], [libsndifsdl2 >= 0.8.2])
 m4_include(config-libs.m4)
 
