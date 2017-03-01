@@ -93,6 +93,8 @@
 #define i18n_sdl2_SET_WINDOW_WIDTH 57
 #define i18n_sdl2_SET_WINDOW_HEIGHT 58
 #define i18n_sdl2_PROCESS_SDL2_EVENTS 59
+#define i18n_sdl2_WINDOW_WIDTH_TOO_NARROW_MINIMUM_IS_P0D 60
+#define i18n_sdl2_WINDOW_HEIGHT_TOO_SMALL_MINIMUM_IS_P0D 61
 
 extern z_ucs fizmo_sdl2_module_name[];
 

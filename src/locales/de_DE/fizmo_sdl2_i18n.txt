@@ -58,3 +58,5 @@ Schriftgröße festlegen.
 Fensterbreite festlegen.
 Fensterhöhe definieren.
 SDL2-Eventverarbeitungsmethode festlegen.
+Fensterbreite ist zu schmal, das Minimum beträgt \{0d} Pixel.
+Fensterhöhe ist zu niedrig, das Minimum beträgt \{0d} Pixel.

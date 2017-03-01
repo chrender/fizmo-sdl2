@@ -1460,8 +1460,16 @@ int main(int argc, char *argv[]) {
 
       int_value = atoi(argv[argi]);
 
-      if (int_value > MINIMUM_X_WINDOW_SIZE) {
+      if (int_value >= MINIMUM_X_WINDOW_SIZE) {
         unscaled_sdl2_interface_screen_width_in_pixels = int_value;
+      }
+      else {
+        i18n_translate(
+            fizmo_sdl2_module_name,
+            i18n_sdl2_WINDOW_WIDTH_TOO_NARROW_MINIMUM_IS_P0D,
+            MINIMUM_X_WINDOW_SIZE);
+        streams_latin1_output("\n");
+        exit(EXIT_FAILURE);
       }
       argi += 1;
     }
@@ -1474,8 +1482,16 @@ int main(int argc, char *argv[]) {
 
       int_value = atoi(argv[argi]);
 
-      if (int_value > MINIMUM_Y_WINDOW_SIZE) {
+      if (int_value >= MINIMUM_Y_WINDOW_SIZE) {
         unscaled_sdl2_interface_screen_height_in_pixels = int_value;
+      }
+      else {
+        i18n_translate(
+            fizmo_sdl2_module_name,
+            i18n_sdl2_WINDOW_HEIGHT_TOO_SMALL_MINIMUM_IS_P0D,
+            MINIMUM_Y_WINDOW_SIZE);
+        streams_latin1_output("\n");
+        exit(EXIT_FAILURE);
       }
       argi += 1;
     }

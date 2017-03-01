@@ -58,3 +58,5 @@ Set font size.
 Set window width.
 Define window height.
 Select how to process SDL2-events.
+Window width is too narrow, the minimum width is \{0d} pixels.
+Window height is too small, the minimum height is \{0d} pixels.
