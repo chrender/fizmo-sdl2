@@ -6,6 +6,7 @@
     <logentry>Adapted to split-library build.</logentry>
     <logentry>Adapted to replacement of en_US locale with en_GB from libfizmo.</logentry>
     <logentry>Show warning messages if window width or height supplied from the command line are too small.</logentry>
+    <logentry>Fix startup error messages, this also fixes silent exists in acse the story file could not be found.</logentry>
   </change>
 
   <change version="0.7.1">

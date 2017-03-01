@@ -8,6 +8,7 @@
  - Adapted to split-library build.
  - Adapted to replacement of en_US locale with en_GB from libfizmo.
  - Show warning messages if window width or height supplied from the command line are too small.
+ - Fix startup error messages, this also fixes silent exists in acse the story file could not be found.
 
 ---
 
