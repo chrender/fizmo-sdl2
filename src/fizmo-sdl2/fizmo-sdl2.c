@@ -1610,20 +1610,22 @@ int main(int argc, char *argv[]) {
         input_file, FILETYPE_DATA, FILEACCESS_READ);
 
     if (story_stream == NULL) {
-      i18n_translate_and_exit(
+      i18n_translate(
           fizmo_sdl2_module_name,
           i18n_sdl2_COULD_NOT_OPEN_OR_FIND_P0S,
-          -0x2016,
           input_file);
+      streams_latin1_output("\n");
       exit(EXIT_FAILURE);
     }
     else {
-      if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
-        i18n_translate_and_exit(
+      if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+        i18n_translate(
             fizmo_sdl2_module_name,
             i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
-            -1,
             "SDL_Init");
+        streams_latin1_output("\n");
+        exit(EXIT_FAILURE);
+      }
 
       if (resize_via_event_filter == true) {
         SDL_SetEventFilter(sdl_event_filter, NULL);
@@ -1652,11 +1654,12 @@ int main(int argc, char *argv[]) {
           unscaled_sdl2_interface_screen_width_in_pixels,
           unscaled_sdl2_interface_screen_height_in_pixels,
           SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI)) == NULL) {
-        i18n_translate_and_exit(
+        i18n_translate(
             fizmo_sdl2_module_name,
             i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
-            -1,
             "SDL_SetVideoMode");
+        streams_latin1_output("\n");
+        exit(EXIT_FAILURE);
       }
 
       SDL_GL_GetDrawableSize(sdl_window, &width, &height);
@@ -1676,11 +1679,12 @@ int main(int argc, char *argv[]) {
       }
 
       if ((sdl_renderer = SDL_CreateRenderer(sdl_window, -1, 0)) == NULL) {
-        i18n_translate_and_exit(
+        i18n_translate(
             fizmo_sdl2_module_name,
             i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
-            -1,
             "SDL_CreateRenderer");
+        streams_latin1_output("\n");
+        exit(EXIT_FAILURE);
       }
 
       if ((Surf_Display = SDL_CreateRGBSurface(
@@ -1692,11 +1696,12 @@ int main(int argc, char *argv[]) {
               0x0000FF00,
               0x000000FF,
               0xFF000000)) == NULL) {
-        i18n_translate_and_exit(
+        i18n_translate(
             fizmo_sdl2_module_name,
             i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
-            -1,
             "SDL_GetWindowSurface");
+        streams_latin1_output("\n");
+        exit(EXIT_FAILURE);
       }
 
       if ((Surf_Backup = SDL_CreateRGBSurface(
@@ -1708,11 +1713,12 @@ int main(int argc, char *argv[]) {
               0x0000FF00,
               0x000000FF,
               0xFF000000)) == NULL) {
-        i18n_translate_and_exit(
+        i18n_translate(
             fizmo_sdl2_module_name,
             i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
-            -1,
             "SDL_GetWindowSurface");
+        streams_latin1_output("\n");
+        exit(EXIT_FAILURE);
       }
 
       if ((sdlTexture = SDL_CreateTexture(sdl_renderer,
@@ -1720,11 +1726,12 @@ int main(int argc, char *argv[]) {
           SDL_TEXTUREACCESS_STREAMING,
           scaled_sdl2_interface_screen_width_in_pixels,
           scaled_sdl2_interface_screen_height_in_pixels)) == NULL) {
-        i18n_translate_and_exit(
+        i18n_translate(
             fizmo_sdl2_module_name,
             i18n_sdl2_FUNCTION_CALL_P0S_ABORTED_DUE_TO_ERROR,
-            -1,
             "SDL_CreateTexture");
+        streams_latin1_output("\n");
+        exit(EXIT_FAILURE);
       }
 
       timeout_semaphore = SDL_CreateSemaphore(1);
