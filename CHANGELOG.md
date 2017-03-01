@@ -7,6 +7,7 @@
  - Fixed SDL2-event evaluation on startup. This fixes a bug that made the interpreter crash when your initial screen size was less than the default size. This fix does now also allow resizing the window during frontispiece display.
  - Adapted to split-library build.
  - Adapted to replacement of en_US locale with en_GB from libfizmo.
+ - Show warning messages if window width or height supplied from the command line are too small.
 
 ---
 
