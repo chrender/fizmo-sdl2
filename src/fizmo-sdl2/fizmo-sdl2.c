@@ -642,7 +642,12 @@ static void reset_interface() {
 }
 
 
-static int sdl2_close_interface(z_ucs *UNUSED(error_message)) {
+static int sdl2_close_interface(z_ucs *error_message) {
+  char *output;
+
+  output = dup_zucs_string_to_utf8_string(error_message);
+  puts(output);
+  free(output);
   return 0;
 }
 
