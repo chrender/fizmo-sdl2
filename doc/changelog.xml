@@ -7,6 +7,7 @@
     <logentry>Adapted to replacement of en_US locale with en_GB from libfizmo.</logentry>
     <logentry>Show warning messages if window width or height supplied from the command line are too small.</logentry>
     <logentry>Fix startup error messages, this also fixes silent exists in case the story file could not be found.</logentry>
+    <logentry>Fixed missing output of interpreter-related, fatal in-game-occuring error messages.</logentry>
   </change>
 
   <change version="0.7.1">
