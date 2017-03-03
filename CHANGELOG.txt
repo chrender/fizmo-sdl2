@@ -18,6 +18,8 @@
    line are too small.
  - Fix startup error messages, this also fixes silent exists in case the
    story file could not be found.
+ - Fixed missing output of interpreter-related, fatal in-game-occuring error
+   messages.
 
    Version 0.7.1 -- August 25, 2016
  - Use tiny-xml-doc-tools for documentation.
