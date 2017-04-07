@@ -3706,8 +3706,8 @@ $as_echo "no" >&6; }
 fi
 
 pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libfizmo" >&5
-$as_echo_n "checking for libfizmo... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libfizmo >= 0.7.14" >&5
+$as_echo_n "checking for libfizmo >= 0.7.14... " >&6; }
 
 if test -n "$libfizmo_CFLAGS"; then
     pkg_cv_libfizmo_CFLAGS="$libfizmo_CFLAGS"
@@ -3747,7 +3747,7 @@ fi
 
 
 if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -3774,7 +3774,7 @@ Alternatively, you may set the environment variables libfizmo_CFLAGS
 and libfizmo_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." "$LINENO" 5
 elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
@@ -3797,8 +3797,8 @@ $as_echo "yes" >&6; }
 fi
 
 pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libdrilbo" >&5
-$as_echo_n "checking for libdrilbo... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libdrilbo >= 0.2.10" >&5
+$as_echo_n "checking for libdrilbo >= 0.2.10... " >&6; }
 
 if test -n "$libdrilbo_CFLAGS"; then
     pkg_cv_libdrilbo_CFLAGS="$libdrilbo_CFLAGS"
@@ -3838,7 +3838,7 @@ fi
 
 
 if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -3865,7 +3865,7 @@ Alternatively, you may set the environment variables libdrilbo_CFLAGS
 and libdrilbo_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." "$LINENO" 5
 elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
@@ -3888,8 +3888,8 @@ $as_echo "yes" >&6; }
 fi
 
 pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libpixelif" >&5
-$as_echo_n "checking for libpixelif... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libpixelif >= 0.8.3" >&5
+$as_echo_n "checking for libpixelif >= 0.8.3... " >&6; }
 
 if test -n "$libpixelif_CFLAGS"; then
     pkg_cv_libpixelif_CFLAGS="$libpixelif_CFLAGS"
@@ -3929,7 +3929,7 @@ fi
 
 
 if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -3956,7 +3956,7 @@ Alternatively, you may set the environment variables libpixelif_CFLAGS
 and libpixelif_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." "$LINENO" 5
 elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
@@ -3979,8 +3979,8 @@ $as_echo "yes" >&6; }
 fi
 
 pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libsndifsdl2" >&5
-$as_echo_n "checking for libsndifsdl2... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libsndifsdl2 >= 0.8.2" >&5
+$as_echo_n "checking for libsndifsdl2 >= 0.8.2... " >&6; }
 
 if test -n "$libsndifsdl2_CFLAGS"; then
     pkg_cv_libsndifsdl2_CFLAGS="$libsndifsdl2_CFLAGS"
@@ -4020,7 +4020,7 @@ fi
 
 
 if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -4047,7 +4047,7 @@ Alternatively, you may set the environment variables libsndifsdl2_CFLAGS
 and libsndifsdl2_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." "$LINENO" 5
 elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
@@ -4112,7 +4112,7 @@ fi
 
 
 if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -4139,7 +4139,7 @@ Alternatively, you may set the environment variables sdl2_CFLAGS
 and sdl2_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." "$LINENO" 5
 elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
