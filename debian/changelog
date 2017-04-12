@@ -1,3 +1,10 @@
+fizmo-sdl2 (0.8.4-3) experimental; urgency=low
+
+  * Fixed machine-readable copyright.
+
+ -- Christoph Ender <christoph.ender@spellbreaker.org>  Wed, 12 Apr 2017 13:00:00 +0200
+
+
 fizmo-sdl2 (0.8.4-2) experimental; urgency=low
 
   * Fixed superfluous dependency and formatting issues.
