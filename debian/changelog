@@ -1,4 +1,11 @@
-fizmo-sdl2 (0.8.4-3) experimental; urgency=low
+fizmo-sdl2 (0.8.4-4) experimental; urgency=low
+
+  * Fixed "fizmo-sdl2-launcher" script.
+
+ -- Christoph Ender <christoph.ender@spellbreaker.org>  Sat, 8 Jul 2017 13:25:00 +0200
+
+
+ffizmo-sdl2 (0.8.4-3) experimental; urgency=low
 
   * Fixed machine-readable copyright.
 
