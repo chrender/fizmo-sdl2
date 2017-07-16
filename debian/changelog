@@ -1,3 +1,11 @@
+fizmo-sdl2 (0.8.4-5) unstable; urgency=low
+
+  * Fix standards version from "4.0.0.4" to "4.0.0".
+  * Switch to unstable.
+
+ -- Christoph Ender <christoph.ender@spellbreaker.org>  Sun, 16 Jul 2017 22:45:00 +0200
+
+
 fizmo-sdl2 (0.8.4-4) experimental; urgency=low
 
   * Fixed "fizmo-sdl2-launcher" script.
