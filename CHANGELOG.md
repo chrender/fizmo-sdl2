@@ -1,6 +1,14 @@
 
 
 
+   **Version 0.8.5**
+
+ - Renamed copyright files to “license” for github license detection compatibility, see [Github's “Licensing a repository”](https://help.github.com/articles/licensing-a-repository/) for further reference.
+ - Minor updates for manpage.
+
+---
+
+
    **Version 0.8.4 — April 9, 2017**
 
  - Fixed SDL2-event evaluation on startup. This fixes a bug that made the interpreter crash when your initial screen size was less than the default size. This fix does now also allow resizing the window during frontispiece display.
