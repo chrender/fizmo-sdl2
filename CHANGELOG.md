@@ -1,7 +1,7 @@
 
 
 
-   **Version 0.8.5**
+   **Version 0.8.5 — August 15, 2017**
 
  - Renamed copyright files to “license” for github license detection compatibility, see [Github's “Licensing a repository”](https://help.github.com/articles/licensing-a-repository/) for further reference.
  - Minor updates for manpage.
