@@ -356,6 +356,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sdl2_CFLAGS = @sdl2_CFLAGS@
 sdl2_LIBS = @sdl2_LIBS@
