@@ -10,7 +10,8 @@ Build-Depends: debhelper (>= 9.0.0),
  libfizmo-dev,
  libpixelif-dev,
  libsndifsdl2-dev,
- libdrilbo-dev
+ libdrilbo-dev,
+ libsdl2-dev
 Standards-Version: 4.0.0
 Homepage: https://fizmo.spellbreaker.org/
 
