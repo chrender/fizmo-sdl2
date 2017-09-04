@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <changelog>
   <change version="0.8.5">
-    <datetime day-of-week="Mon" month="8" day="15" hour="22"
-      minute="22" second="22" timezone="CEST" year="2017"/>
+    <datetime day-of-week="Sun" month="9" day="3" hour="21"
+      minute="52" second="18" timezone="CEST" year="2017"/>
     <logentry>Renamed copyright files to “license” for github license detection compatibility, see <a href="https://help.github.com/articles/licensing-a-repository/">Github's “Licensing a repository”</a> for further reference.</logentry>
+    <logentry>Added missing contributor phrasing to BSD-3 clause. The resulting license now exactly matches the wording used on Github and so also makes the license detection work.</logentry>
     <logentry>Minor updates for manpage.</logentry>
   </change>
 
