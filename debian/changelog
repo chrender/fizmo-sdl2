@@ -1,10 +1,11 @@
 fizmo-sdl2 (0.8.5-1) unstable; urgency=low
 
   * New upstream version.
+  * Added manpage for "fizmo-sdl2-launcher" script.
   * Updated BSD-3 license to include contributors. License is now to 100%
     identical to the 3-Clause BSD License.
 
- -- Christoph Ender <christoph.ender@spellbreaker.org>  Tue, 29 Aug 2017 22:45:00 +0200
+ -- Christoph Ender <christoph.ender@spellbreaker.org>  Mon, 11 Sep 2017 18:20:00 +0200
 
 
 fizmo-sdl2 (0.8.4-5) unstable; urgency=low
