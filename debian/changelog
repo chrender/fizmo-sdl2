@@ -1,3 +1,12 @@
+fizmo-sdl2 (0.8.5-2) unstable; urgency=low
+
+  * Switched priority from "extra" to "optional".
+  * Updated standards version to 4.1.0.
+  * Added "Vcs-Browser" and "Vcs-Git" fields to control file.
+
+ -- Christoph Ender <christoph.ender@spellbreaker.org>  Tue, 12 Sep 2017 22:40:00 +0200
+
+
 fizmo-sdl2 (0.8.5-1) unstable; urgency=low
 
   * New upstream version.
