@@ -7,21 +7,26 @@ Build-Depends: debhelper (>= 9.0.0),
  automake,
  autoconf,
  pkg-config,
- libfizmo-dev,
- libpixelif-dev,
- libsndifsdl2-dev,
- libdrilbo-dev,
- libsdl2-dev
+ libxml2-dev,
+ libx11-dev,
+ libjpeg-dev,
+ libpng-dev,
+ libsdl2-dev,
+ libsndfile1-dev,
+ libfreetype6-dev,
+ libfizmo-dev (>= 0.7.15),
+ libdrilbo-dev (>= 0.2.11),
+ libsndifsdl2-dev (>= 0.8.3),
+ libpixelif-dev (>= 0.8.4)
 Standards-Version: 4.1.0
 Homepage: https://fizmo.spellbreaker.org/
 Vcs-Browser: https://github.com/chrender/fizmo-sdl2
-Vcs-Git: https://github.com/chrender/fizmo-sdl2
 
 Package: fizmo-sdl2
 Architecture: any
-Depends: libfizmo-common,
- libpixelif-common,
- libdrilbo-common,
+Depends: libfizmo-common (>= 0.7.14),
+ libdrilbo-common (>= 0.2.10),
+ libpixelif-common (>= 0.8.3),
  ${misc:Depends},
  ${shlibs:Depends}
 Provides: fizmo,

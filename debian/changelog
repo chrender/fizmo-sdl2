@@ -1,3 +1,16 @@
+fizmo-sdl2 (0.8.5-3) unstable; urgency=low
+
+  * Made build require at least version 0.7.15 of libfizmo-dev, 0.7.15 of
+    libmonospaceif-dev, 0.8.4 of libpixelif-dev and 0.2.11 of libdrilbo-dev
+    due to build process changes.
+  * Made fizmo-ncursesw require at least version 0.7.14 of libfizmo-common,
+    0.8.3 of libpixelif-common -common and 0.2.10 of libdrilbo-common due to
+    requirement of en_GB instead of the en_US hyphenation patterns.
+  * Removed "Vcs-Git" field from control file.
+
+ -- Christoph Ender <christoph.ender@spellbreaker.org>  Thu, 14 Sep 2017 22:40:00 +0200
+
+
 fizmo-sdl2 (0.8.5-2) unstable; urgency=low
 
   * Switched priority from "extra" to "optional".
