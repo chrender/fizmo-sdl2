@@ -45,7 +45,7 @@ AC_ARG_ENABLE([tracing],
 
 AC_INIT(
  [fizmo-sdl2],
- [0.8.5],
+ [0.8.6],
  fizmo@spellbreaker.org,
  fizmo-sdl2)
 
