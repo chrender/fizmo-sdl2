@@ -126,8 +126,9 @@
 #endif /* SOUND_INTERFACE_INCLUDE_FILE */
 
 #include "../locales/fizmo_sdl2_locales.h"
+#include "../locales/locale_data.h"
 
-#define FIZMO_SDL_VERSION "0.8.6"
+#define FIZMO_SDL_VERSION "0.9.0"
 
 #define SDL_OUTPUT_CHAR_BUF_SIZE 80
 #define MINIMUM_X_WINDOW_SIZE 200
@@ -247,7 +248,7 @@ static bool is_colour_available() {
 
 static void print_startup_syntax() {
   int i;
-  char **available_locales = get_available_locale_names();
+  z_ucs **available_locales = get_available_locale_names();
 
   if (available_locales == NULL) {
     streams_latin1_output("Could not find any installed locales.\n");
@@ -288,19 +289,11 @@ static void print_startup_syntax() {
     if (i != 0)
       streams_latin1_output(", ");
 
-    streams_latin1_output(available_locales[i]);
+    streams_z_ucs_output(available_locales[i]);
     free(available_locales[i]);
     i++;
   }
   free(available_locales);
-  streams_latin1_output(".\n");
-
-  i18n_translate(
-      fizmo_sdl2_module_name,
-      i18n_sdl2_LOCALE_SEARCH_PATH);
-  streams_latin1_output(": ");
-  streams_latin1_output(
-      get_i18n_default_search_path());
   streams_latin1_output(".\n");
 
   i18n_translate(
@@ -1301,6 +1294,12 @@ int main(int argc, char *argv[]) {
   parse_fizmo_config_files();
 #endif // DISABLE_CONFIGFILES
 
+  TRACE_LOG("Initializing fizmo-sdl2 locales.\n");
+  init_fizmo_sdl2_locales();
+
+  TRACE_LOG("Registering fizmo-sdl2 locale module.\n");
+  register_locale_module(
+    locale_module_fizmo_sdl2.module_name, &locale_module_fizmo_sdl2);
 
   while (argi < argc) {
     if ((strcmp(argv[argi], "-l") == 0)
