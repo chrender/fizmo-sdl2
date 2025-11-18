@@ -82,7 +82,7 @@ endif()
 
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBFIZMO REQUIRED libfizmo>=0.9.0)
+pkg_check_modules(LIBFIZMO REQUIRED libfizmo>=0.8.0)
 pkg_check_modules(LIBDRILBO REQUIRED libdrilbo)
 pkg_check_modules(LIBPIXELIF REQUIRED libpixelif)
 pkg_check_modules(SDL2 REQUIRED sdl2)
